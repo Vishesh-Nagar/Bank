@@ -12,23 +12,17 @@ export const register = async (user: UserCreateDto): Promise<UserDto> => {
     return response.data;
 };
 
-// Login user - stores credentials for session
+// Login user
 export const login = async (
     credentials: LoginDto
 ): Promise<LoginResponseDto> => {
-    try {
-        const response = await api.post("/users/login", credentials);
+    const response = await api.post("/users/login", credentials);
 
-        // Store user data in localStorage
-        if (response.data && response.data.user) {
-            localStorage.setItem("user", JSON.stringify(response.data));
-        }
-
-        return response.data;
-    } catch (error: any) {
-        console.error("Login error:", error);
-        throw error;
+    if (response.data && response.data.user) {
+        localStorage.setItem("user", JSON.stringify(response.data));
     }
+
+    return response.data;
 };
 
 // Logout user
@@ -39,22 +33,20 @@ export const logout = (): void => {
 
 // Check if user is authenticated
 export const isAuthenticated = (): boolean => {
-    const user = localStorage.getItem("user");
-    return !!user;
+    return !!localStorage.getItem("user");
 };
 
-// Get current user from localStorage
+// Get current user
 export const getCurrentUser = (): UserDto | null => {
     const user = localStorage.getItem("user");
-    if (user) {
-        try {
-            const data = JSON.parse(user);
-            return data.user || null;
-        } catch (e) {
-            return null;
-        }
+    if (!user) return null;
+
+    try {
+        const data = JSON.parse(user);
+        return data.user || null;
+    } catch {
+        return null;
     }
-    return null;
 };
 
 // Get user by ID
