@@ -18,22 +18,18 @@ export const login = async (
 ): Promise<LoginResponseDto> => {
     const response = await api.post("/users/login", credentials);
 
-    if (response.data && response.data.user) {
-        localStorage.setItem("user", JSON.stringify(response.data));
-    }
-
     return response.data;
 };
 
 // Logout user
 export const logout = (): void => {
-    localStorage.removeItem("user");
-    sessionStorage.clear();
+    // Logout is handled server-side
 };
 
 // Check if user is authenticated
 export const isAuthenticated = (): boolean => {
-    return !!localStorage.getItem("user");
+    // Check if user data exists in localStorage
+    return getCurrentUser() !== null;
 };
 
 // Get current user
