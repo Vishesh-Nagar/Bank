@@ -17,7 +17,7 @@ export const login = async (
     credentials: LoginDto
 ): Promise<LoginResponseDto> => {
     const response = await api.post("/users/login", credentials);
-
+    localStorage.setItem("user", JSON.stringify(response.data));
     return response.data;
 };
 
