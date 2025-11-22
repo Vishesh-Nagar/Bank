@@ -75,7 +75,19 @@ public class AccountServiceImpl implements AccountService {
 
     @Override
     public List<AccountDto> getAllAccounts() {
-        User user = getAuthenticatedUser();
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()) {
+            throw new UserException("User not authenticated");
+        }
+        Object principal = authentication.getPrincipal();
+        String username;
+        if (principal instanceof UserDetails userDetails) {
+            username = userDetails.getUsername();
+        } else {
+            username = principal.toString();
+        }
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new UserException("User not found"));
         List<Account> accounts = accountRepository.findByUser(user);
         return accounts.stream().map(AccountMapper::mapToAccountDto).collect(Collectors.toList());
     }
