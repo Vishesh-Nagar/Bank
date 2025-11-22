@@ -180,7 +180,6 @@ const Dashboard: React.FC = () => {
                         Welcome, {getCurrentUser()?.username}
                     </span>
                     <div className="header-buttons">
-                        <button className="btn btn-primary">New Button</button>
                         <button
                             onClick={handleLogout}
                             className="btn btn-secondary"
