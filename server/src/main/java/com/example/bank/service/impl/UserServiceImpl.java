@@ -9,7 +9,7 @@ import com.example.bank.exception.UserException;
 import com.example.bank.mapper.UserMapper;
 import com.example.bank.repository.UserRepository;
 import com.example.bank.service.UserService;
-import org.springframework.security.crypto.password.PasswordEncoder;
+import org.apache.commons.codec.digest.DigestUtils;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -19,28 +19,24 @@ import java.util.stream.Collectors;
 public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
-    private final PasswordEncoder passwordEncoder;
 
-    public UserServiceImpl(UserRepository userRepository, PasswordEncoder passwordEncoder) {
+    public UserServiceImpl(UserRepository userRepository) {
         this.userRepository = userRepository;
-        this.passwordEncoder = passwordEncoder;
     }
 
     @Override
     public UserDto createUser(UserCreateDto userCreateDto) {
-        // Check if username already exists
         userRepository.findByUsername(userCreateDto.getUsername()).ifPresent(u -> {
             throw new UserException("Username already exists");
         });
 
-        // Check if email already exists
         userRepository.findByEmail(userCreateDto.getEmail()).ifPresent(u -> {
             throw new UserException("Email already exists");
         });
 
         User user = new User();
         user.setUsername(userCreateDto.getUsername());
-        user.setPassword(passwordEncoder.encode(userCreateDto.getPassword()));
+        user.setPassword(DigestUtils.sha256Hex(userCreateDto.getPassword()));
         user.setEmail(userCreateDto.getEmail());
 
         User savedUser = userRepository.save(user);
@@ -65,7 +61,6 @@ public class UserServiceImpl implements UserService {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new UserException("User not found"));
 
-        // Check if new username is already taken
         if (userDto.getUsername() != null && !userDto.getUsername().equals(user.getUsername())) {
             userRepository.findByUsername(userDto.getUsername()).ifPresent(u -> {
                 throw new UserException("Username already exists");
@@ -73,12 +68,16 @@ public class UserServiceImpl implements UserService {
             user.setUsername(userDto.getUsername());
         }
 
-        // Check if new email is already taken
         if (userDto.getEmail() != null && !userDto.getEmail().equals(user.getEmail())) {
             userRepository.findByEmail(userDto.getEmail()).ifPresent(u -> {
                 throw new UserException("Email already exists");
             });
             user.setEmail(userDto.getEmail());
+        }
+
+        // If updating password, hash it
+        if (userDto.getPassword() != null && !userDto.getPassword().isEmpty()) {
+            user.setPassword(DigestUtils.sha256Hex(userDto.getPassword()));
         }
 
         User updatedUser = userRepository.save(user);
@@ -97,7 +96,8 @@ public class UserServiceImpl implements UserService {
         User user = userRepository.findByUsername(loginDto.getUsername())
                 .orElseThrow(() -> new UserException("Invalid username or password"));
 
-        if (!passwordEncoder.matches(loginDto.getPassword(), user.getPassword())) {
+        // Compare stored hash with hash of input password
+        if (!DigestUtils.sha256Hex(loginDto.getPassword()).equals(user.getPassword())) {
             throw new UserException("Invalid username or password");
         }
 

@@ -66,31 +66,15 @@ public class UserController {
         return ResponseEntity.ok("User deleted successfully");
     }
 
-    // Login
+    // UserController.java
     @PostMapping("/login")
     public ResponseEntity<LoginResponseDto> login(
-            @RequestBody LoginDto loginDto,
-            HttpServletRequest request
+            @RequestBody LoginDto loginDto
     ) {
         try {
-            Authentication authentication = authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(
-                            loginDto.getUsername(),
-                            loginDto.getPassword()
-                    )
-            );
-
-            SecurityContextHolder.getContext().setAuthentication(authentication);
-
-            HttpSession session = request.getSession(true);
-            session.setAttribute(
-                    HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY,
-                    SecurityContextHolder.getContext()
-            );
-
+            // Use only your custom service—NO Spring Security authentication!
             LoginResponseDto loginResponse = userService.login(loginDto);
             return ResponseEntity.ok(loginResponse);
-
         } catch (Exception e) {
             return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
         }

@@ -16,7 +16,6 @@ import java.util.List;
 @Table(name = "users")
 @Entity
 public class User {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -33,12 +32,4 @@ public class User {
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
     @JsonManagedReference
     private List<Account> accounts;
-
-    @PrePersist
-    @PreUpdate
-    public void encryptPassword() {
-        if (password != null && !password.startsWith("$2a$")) {
-            this.password = new org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder().encode(password);
-        }
-    }
 }

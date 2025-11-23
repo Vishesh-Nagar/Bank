@@ -1,4 +1,5 @@
 import api from "./api";
+import { sha256 } from "js-sha256";
 import type {
     UserCreateDto,
     UserDto,
@@ -6,17 +7,22 @@ import type {
     LoginResponseDto,
 } from "../types";
 
-// Register new user
+// Register new user: hash password using SHA-256 before sending
 export const register = async (user: UserCreateDto): Promise<UserDto> => {
-    const response = await api.post("/users", user);
+    const hashedUser = { ...user, password: sha256(user.password) };
+    const response = await api.post("/users", hashedUser);
     return response.data;
 };
 
-// Login user
+// Login user: hash password using SHA-256 before sending
 export const login = async (
     credentials: LoginDto
 ): Promise<LoginResponseDto> => {
-    const response = await api.post("/users/login", credentials);
+    const hashedCredentials = {
+        ...credentials,
+        password: sha256(credentials.password),
+    };
+    const response = await api.post("/users/login", hashedCredentials);
     localStorage.setItem("user", JSON.stringify(response.data));
     return response.data;
 };
@@ -24,6 +30,8 @@ export const login = async (
 // Logout user
 export const logout = (): void => {
     // Logout is handled server-side
+    localStorage.clear();
+    sessionStorage.clear();
 };
 
 // Check if user is authenticated

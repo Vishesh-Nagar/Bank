@@ -29,8 +29,9 @@ const Dashboard: React.FC = () => {
     >(null);
 
     // Form states
+    const currentUser = getCurrentUser();
     const [newAccount, setNewAccount] = useState<AccountCreateDto>({
-        accountHolderName: "",
+        accountHolderName: currentUser?.username || "",
         balance: 0,
         accountType: "SAVINGS",
     });
@@ -51,10 +52,11 @@ const Dashboard: React.FC = () => {
             setLoading(true);
             setError("");
             const data = await getAllAccounts();
+            const currentUser = getCurrentUser();
 
-            // Ensure data is always an array
+            // Ensure data is always an array and filter to current user's accounts
             if (Array.isArray(data)) {
-                setAccounts(data);
+                setAccounts(data.filter(acc => acc.accountHolderName === currentUser?.username));
             } else {
                 console.error("API returned non-array data:", data);
                 setAccounts([]);
@@ -159,7 +161,7 @@ const Dashboard: React.FC = () => {
     const handleLogout = () => {
         localStorage.removeItem("user");
         sessionStorage.clear();
-        navigate("/login");
+        navigate("/");
     };
 
     if (loading) {
@@ -303,24 +305,6 @@ const Dashboard: React.FC = () => {
                     <div className="modal" onClick={(e) => e.stopPropagation()}>
                         <h2>Create New Account</h2>
                         <form onSubmit={handleCreateAccount}>
-                            <div className="form-group">
-                                <label htmlFor="accountHolder">
-                                    Account Holder Name:
-                                </label>
-                                <input
-                                    id="accountHolder"
-                                    type="text"
-                                    value={newAccount.accountHolderName}
-                                    onChange={(e) =>
-                                        setNewAccount({
-                                            ...newAccount,
-                                            accountHolderName: e.target.value,
-                                        })
-                                    }
-                                    placeholder="Enter full name"
-                                    required
-                                />
-                            </div>
 
                             <div className="form-group">
                                 <label htmlFor="initialBalance">
@@ -380,7 +364,7 @@ const Dashboard: React.FC = () => {
                                     onClick={() => {
                                         setShowCreateModal(false);
                                         setNewAccount({
-                                            accountHolderName: "",
+                                            accountHolderName: currentUser?.username || "",
                                             balance: 0,
                                             accountType: "SAVINGS",
                                         });

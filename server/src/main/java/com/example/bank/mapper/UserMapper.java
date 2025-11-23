@@ -19,7 +19,8 @@ public class UserMapper {
         return new UserDto(
                 user.getId() != null ? user.getId() : null,
                 user.getUsername() != null ? user.getUsername() : null,
-                user.getEmail() != null ? user.getEmail() : null
+                user.getEmail() != null ? user.getEmail() : null,
+                user.getPassword() != null ? user.getPassword() : null
         );
     }
 }
