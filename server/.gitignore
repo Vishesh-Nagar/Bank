@@ -31,5 +31,5 @@ build/
 
 ### VS Code ###
 .vscode/
-.env.proerties
-tasks.txt
+.env.properties
+structure.txt
