@@ -9,14 +9,23 @@ import com.example.bank.exception.UserException;
 import com.example.bank.mapper.UserMapper;
 import com.example.bank.repository.UserRepository;
 import com.example.bank.service.UserService;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.SignatureAlgorithm;
+import io.jsonwebtoken.security.Keys;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.springframework.stereotype.Service;
 
+import javax.crypto.SecretKey;
+import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
 public class UserServiceImpl implements UserService {
+
+    private static final String JWT_SECRET = "mySecretKeyForJWTTokenGenerationAndValidationInBankApplication12345";
+    private static final SecretKey SECRET_KEY = Keys.hmacShaKeyFor(JWT_SECRET.getBytes());
+    private static final long EXPIRATION_TIME = 86400000; // 24 hours
 
     private final UserRepository userRepository;
 
@@ -102,6 +111,19 @@ public class UserServiceImpl implements UserService {
         }
 
         UserDto userDto = UserMapper.mapToUserDto(user);
-        return new LoginResponseDto(userDto);
+        String token = generateToken(userDto);
+        return new LoginResponseDto(userDto, token);
+    }
+
+    private String generateToken(UserDto user) {
+        Date now = new Date();
+        Date expiryDate = new Date(now.getTime() + EXPIRATION_TIME);
+
+        return Jwts.builder()
+                .setSubject(user.getUsername())
+                .setIssuedAt(now)
+                .setExpiration(expiryDate)
+                .signWith(SECRET_KEY)
+                .compact();
     }
 }
