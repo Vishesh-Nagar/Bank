@@ -30,11 +30,100 @@
     -webkit-text-fill-color: transparent;
     background-clip: text;
 }
-/* Header right section (username + buttons) */
+
+/* Hamburger Menu - Hidden by default, shown on mobile */
+.hamburger-menu {
+    display: none;
+    background: none;
+    border: none;
+    color: #ffffff;
+    font-size: 24px;
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 6px;
+    transition: all 0.3s ease;
+}
+
+.hamburger-menu:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+/* Header right section (username + buttons) - Shown by default, hidden on mobile */
 .header-right {
     display: flex;
     align-items: center;
     gap: 16px; /* space between username and buttons */
+}
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+    .hamburger-menu {
+        display: block;
+    }
+
+    .header-right {
+        display: none;
+    }
+}
+
+/* Sidebar Overlay */
+.sidebar-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.7);
+    z-index: 1000;
+    display: flex;
+    justify-content: flex-start;
+}
+
+/* Sidebar */
+.sidebar {
+    background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+    width: 280px;
+    height: 100vh;
+    padding: 24px;
+    box-shadow: 4px 0 20px rgba(0, 0, 0, 0.5);
+    border-top-right-radius: 16px;
+    border-bottom-right-radius: 16px;
+}
+
+.sidebar-content {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+.close-sidebar {
+    align-self: flex-end;
+    background: none;
+    border: none;
+    color: #ffffff;
+    font-size: 24px;
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 6px;
+    transition: all 0.3s ease;
+}
+
+.close-sidebar:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.sidebar .username {
+    padding: 16px 24px;
+    font-size: 16px;
+    color: #cbd5e1;
+    background: rgba(0, 0, 0, 0.4);
+    border-radius: 10px;
+    text-align: center;
+}
+
+/* Ensure sidebar button styles */
+.sidebar .btn {
+    margin-top: auto;
 }
 
 .username {

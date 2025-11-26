@@ -36,6 +36,7 @@ const Dashboard: React.FC = () => {
         accountType: "SAVINGS",
     });
     const [transactionAmount, setTransactionAmount] = useState<string>("");
+    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
     useEffect(() => {
         fetchAccounts();
@@ -176,6 +177,13 @@ const Dashboard: React.FC = () => {
     return (
         <div className="dashboard">
             <header className="dashboard-header">
+                <button
+                    className="hamburger-menu"
+                    onClick={() => setIsSidebarOpen(true)}
+                    aria-label="Open menu"
+                >
+                    ☰
+                </button>
                 <h1>Banking Dashboard</h1>
                 <div className="header-right">
                     <span className="username">
@@ -191,6 +199,35 @@ const Dashboard: React.FC = () => {
                     </div>
                 </div>
             </header>
+
+            {/* Mobile Sidebar - Only show on mobile devices */}
+            {isSidebarOpen && (
+                <div className="sidebar-overlay" onClick={() => setIsSidebarOpen(false)}>
+                    <div className="sidebar" onClick={(e) => e.stopPropagation()}>
+                        <div className="sidebar-content">
+                            <button
+                                className="close-sidebar"
+                                onClick={() => setIsSidebarOpen(false)}
+                                aria-label="Close menu"
+                            >
+                                ✕
+                            </button>
+                            <span className="username">
+                                Welcome, {getCurrentUser()?.username}
+                            </span>
+                            <button
+                                onClick={() => {
+                                    setIsSidebarOpen(false);
+                                    handleLogout();
+                                }}
+                                className="btn btn-secondary"
+                            >
+                                Logout
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {error && (
                 <div className="error-message">
