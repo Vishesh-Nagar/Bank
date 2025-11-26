@@ -1,7 +1,6 @@
 import axios from "axios";
 
-const API_URL = import.meta.env.VITE_BACKEND_URL || "/api";
-// const API_URL = "http://localhost:8080/api";  // For local testing
+const API_URL = import.meta.env.VITE_BACKEND_URL;
 
 const api = axios.create({
     baseURL: API_URL,
@@ -15,11 +14,11 @@ const api = axios.create({
 api.interceptors.response.use(
     (response) => response,
     (error) => {
-        // If response is HTML (Spring Security login page), treat as 401
-        if (error.response?.headers["content-type"]?.includes("text/html")) {
-            console.log(
-                "Received HTML instead of JSON - user not authenticated"
-            );
+        if (error.response?.status === 401 || error.response?.status === 403) {
+            console.log("Authentication error - redirecting to login");
+            // Clear any stored user data
+            localStorage.removeItem("user");
+            sessionStorage.clear();
             // Redirect to login
             window.location.href = "/login";
             return Promise.reject({
@@ -40,10 +39,16 @@ api.interceptors.request.use(
                 // If you have a token, add it to headers
                 if (userData.token) {
                     config.headers.Authorization = `Bearer ${userData.token}`;
+                } else {
+                    // Add dummy auth header to prevent browser basic auth popup
+                    config.headers.Authorization = "Bearer dummy";
                 }
             } catch (e) {
                 console.error("Error parsing user data:", e);
             }
+        } else {
+            // Add dummy auth header to prevent browser basic auth popup
+            config.headers.Authorization = "Bearer dummy";
         }
         return config;
     },

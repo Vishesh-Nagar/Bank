@@ -47,7 +47,7 @@ export const getCurrentUser = (): UserDto | null => {
 
     try {
         const data = JSON.parse(user);
-        return data.user || null;
+        return data.user || data; // fallback for old format
     } catch {
         return null;
     }

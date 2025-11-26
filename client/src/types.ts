@@ -50,4 +50,5 @@ export interface LoginDto {
 // DTO for login response (never send password in response)
 export interface LoginResponseDto {
     user: UserDto;
+    token: string;
 }
