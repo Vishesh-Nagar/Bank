@@ -456,13 +456,27 @@ const Dashboard: React.FC = () => {
                                 step="0.01"
                                 min="0.01"
                                 value={transactionAmount}
-                                onChange={(e) =>
-                                    setTransactionAmount(e.target.value)
-                                }
+                                onChange={(e) => {
+                                    setTransactionAmount(e.target.value);
+                                    if (transactionModal === "withdraw") {
+                                        const amount = parseFloat(e.target.value);
+                                        if (amount > selectedAccount.balance) {
+                                            setError("Cannot withdraw amount more than current balance");
+                                        } else if (error === "Cannot withdraw amount more than current balance") {
+                                            setError("");
+                                        }
+                                    }
+                                }}
                                 placeholder="Enter amount"
                                 autoFocus
                             />
                         </div>
+
+                        {transactionModal === "withdraw" && error && (
+                            <div className="error-message">
+                                <span>⚠️ {error}</span>
+                            </div>
+                        )}
 
                         {transactionAmount &&
                             parseFloat(transactionAmount) > 0 && (
@@ -496,7 +510,9 @@ const Dashboard: React.FC = () => {
                                 }`}
                                 disabled={
                                     !transactionAmount ||
-                                    parseFloat(transactionAmount) <= 0
+                                    parseFloat(transactionAmount) <= 0 ||
+                                    (transactionModal === "withdraw" &&
+                                        parseFloat(transactionAmount) > selectedAccount.balance)
                                 }
                             >
                                 {transactionModal === "deposit"
