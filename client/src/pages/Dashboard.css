@@ -1,4 +1,6 @@
-/* Dashboard Container */
+/* ===========================
+   Root Layout
+=========================== */
 .dashboard {
     padding: 24px;
     max-width: 1400px;
@@ -8,7 +10,9 @@
     color: #ffffff;
 }
 
-/* Header */
+/* ===========================
+   Header
+=========================== */
 .dashboard-header {
     display: flex;
     justify-content: space-between;
@@ -21,17 +25,22 @@
 }
 
 .dashboard-header h1 {
-    color: #ffffff;
     margin: 0;
     font-size: 32px;
     font-weight: 700;
     background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+    background-clip: text;
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
-    background-clip: text;
 }
 
-/* Hamburger Menu - Hidden by default, shown on mobile */
+.header-right {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+/* Hamburger */
 .hamburger-menu {
     display: none;
     background: none;
@@ -48,46 +57,35 @@
     background: rgba(255, 255, 255, 0.1);
 }
 
-/* Header right section (username + buttons) - Shown by default, hidden on mobile */
-.header-right {
-    display: flex;
-    align-items: center;
-    gap: 16px; /* space between username and buttons */
-}
-
-/* Mobile responsiveness */
+/* Mobile */
 @media (max-width: 768px) {
     .hamburger-menu {
         display: block;
     }
-
     .header-right {
         display: none;
     }
 }
 
-/* Sidebar Overlay */
+/* ===========================
+   Sidebar
+=========================== */
 .sidebar-overlay {
     position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
+    inset: 0;
     background: rgba(0, 0, 0, 0.7);
     z-index: 1000;
     display: flex;
     justify-content: flex-start;
 }
 
-/* Sidebar */
 .sidebar {
     background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
     width: 280px;
     height: 100vh;
     padding: 24px;
     box-shadow: 4px 0 20px rgba(0, 0, 0, 0.5);
-    border-top-right-radius: 16px;
-    border-bottom-right-radius: 16px;
+    border-radius: 0 16px 16px 0;
 }
 
 .sidebar-content {
@@ -102,9 +100,9 @@
     border: none;
     color: #ffffff;
     font-size: 24px;
-    cursor: pointer;
     padding: 8px;
     border-radius: 6px;
+    cursor: pointer;
     transition: all 0.3s ease;
 }
 
@@ -121,11 +119,9 @@
     text-align: center;
 }
 
-/* Ensure sidebar button styles */
-.sidebar .btn {
-    margin-top: auto;
-}
-
+/* ===========================
+   Username Badge
+=========================== */
 .username {
     display: inline-flex;
     align-items: center;
@@ -134,25 +130,31 @@
     font-weight: 600;
     color: #cbd5e1;
     background: rgba(0, 0, 0, 0.4);
-    padding: 12px 24px; /* match .btn padding */
-    border-radius: 10px; /* match .btn border-radius */
-    min-height: 44px; /* optional: ensure height matches button */
+    padding: 12px 24px;
+    border-radius: 10px;
+    min-height: 44px;
 }
 
-/* Header buttons container */
+/* ===========================
+   Header Buttons
+=========================== */
 .header-buttons {
     display: flex;
-    gap: 12px; /* space between the two buttons */
+    gap: 12px;
 }
 
-/* Action Buttons */
+/* ===========================
+   Dashboard Actions
+=========================== */
 .dashboard-actions {
     display: flex;
     gap: 12px;
     margin-bottom: 32px;
 }
 
-/* Summary Cards */
+/* ===========================
+   Summary Cards
+=========================== */
 .accounts-summary {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
@@ -176,7 +178,7 @@
 }
 
 .summary-card h3 {
-    margin: 0 0 16px 0;
+    margin: 0 0 16px;
     font-size: 14px;
     font-weight: 600;
     color: #94a3b8;
@@ -187,15 +189,15 @@
 .summary-value {
     font-size: 36px;
     font-weight: 700;
-    color: #ffffff;
-    margin: 0;
     background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+    background-clip: text;
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
-    background-clip: text;
 }
 
-/* Accounts Grid */
+/* ===========================
+   Accounts Grid / Cards
+=========================== */
 .accounts-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
@@ -203,7 +205,6 @@
     margin-bottom: 32px;
 }
 
-/* Account Card */
 .account-card {
     background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
     border-radius: 16px;
@@ -235,7 +236,6 @@
 .account-header {
     display: flex;
     justify-content: space-between;
-    align-items: flex-start;
     margin-bottom: 20px;
     padding-bottom: 16px;
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
@@ -243,11 +243,11 @@
 
 .account-header h3 {
     margin: 0;
-    color: #ffffff;
     font-size: 20px;
     font-weight: 600;
 }
 
+/* Account ID */
 .account-id {
     margin-bottom: 16px;
 }
@@ -265,7 +265,6 @@
     font-size: 11px;
     font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
 }
 
 .account-type.savings {
@@ -284,7 +283,6 @@
 .account-balance {
     display: flex;
     justify-content: space-between;
-    align-items: center;
     padding: 20px;
     background: rgba(30, 41, 59, 0.5);
     border-radius: 12px;
@@ -293,9 +291,9 @@
 }
 
 .balance-label {
+    font-size: 14px;
     font-weight: 600;
     color: #94a3b8;
-    font-size: 14px;
 }
 
 .balance-amount {
@@ -312,12 +310,7 @@
     flex-wrap: wrap;
 }
 
-.account-actions button {
-    flex: 1;
-    min-width: 90px;
-}
-
-/* No Accounts State */
+/* No Accounts */
 .no-accounts {
     text-align: center;
     color: #64748b;
@@ -332,10 +325,11 @@
     font-size: 24px;
     font-weight: 600;
     color: #94a3b8;
-    margin-bottom: 12px;
 }
 
-/* Button Styles */
+/* ===========================
+   Buttons
+=========================== */
 .btn {
     padding: 12px 24px;
     border: none;
@@ -369,7 +363,6 @@
 
 .btn-secondary:hover {
     background: rgba(100, 116, 139, 0.3);
-    border-color: rgba(203, 213, 225, 0.3);
 }
 
 .btn-success {
@@ -377,17 +370,9 @@
     color: #ffffff;
 }
 
-.btn-success:hover {
-    background: linear-gradient(135deg, #059669 0%, #047857 100%);
-}
-
 .btn-warning {
     background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
     color: #ffffff;
-}
-
-.btn-warning:hover {
-    background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
 }
 
 .btn-danger {
@@ -395,22 +380,17 @@
     color: #ffffff;
 }
 
-.btn-danger:hover {
-    background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
-}
-
 .btn-sm {
     padding: 8px 16px;
     font-size: 13px;
 }
 
-/* Modal Styles */
+/* ===========================
+   Modal
+=========================== */
 .modal-overlay {
     position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
+    inset: 0;
     background: rgba(0, 0, 0, 0.85);
     backdrop-filter: blur(8px);
     display: flex;
@@ -418,15 +398,6 @@
     align-items: center;
     z-index: 1000;
     animation: fadeIn 0.2s ease;
-}
-
-@keyframes fadeIn {
-    from {
-        opacity: 0;
-    }
-    to {
-        opacity: 1;
-    }
 }
 
 .modal {
@@ -440,26 +411,25 @@
     animation: slideUp 0.3s ease;
 }
 
-@keyframes slideUp {
-    from {
-        transform: translateY(20px);
-        opacity: 0;
-    }
-    to {
-        transform: translateY(0);
-        opacity: 1;
-    }
-}
-
 .modal h2 {
-    margin-top: 0;
-    margin-bottom: 24px;
-    color: #ffffff;
+    margin: 0 0 24px;
     font-size: 24px;
     font-weight: 700;
 }
 
-/* Form Styles */
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes slideUp {
+    from { transform: translateY(20px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+/* ===========================
+   Forms
+=========================== */
 .form-group {
     margin-bottom: 24px;
 }
@@ -482,7 +452,6 @@
     color: #ffffff;
     font-size: 15px;
     transition: all 0.3s ease;
-    box-sizing: border-box;
 }
 
 .form-group input:focus,
@@ -503,11 +472,9 @@
     margin-top: 32px;
 }
 
-.modal-actions button {
-    flex: 1;
-}
-
-/* Transaction Info */
+/* ===========================
+   Transaction Info
+=========================== */
 .transaction-info {
     background: rgba(15, 23, 42, 0.5);
     padding: 20px;
@@ -542,7 +509,9 @@
     font-size: 16px;
 }
 
-/* Error Message */
+/* ===========================
+   Error Message
+=========================== */
 .error-message {
     background: rgba(239, 68, 68, 0.1);
     border: 1px solid rgba(239, 68, 68, 0.3);
@@ -556,40 +525,39 @@
     animation: slideDown 0.3s ease;
 }
 
-@keyframes slideDown {
-    from {
-        transform: translateY(-10px);
-        opacity: 0;
-    }
-    to {
-        transform: translateY(0);
-        opacity: 1;
-    }
-}
-
 .close-btn {
     background: none;
     border: none;
     color: #fca5a5;
     font-size: 24px;
     cursor: pointer;
-    padding: 0;
     width: 28px;
     height: 28px;
     display: flex;
     align-items: center;
     justify-content: center;
     border-radius: 6px;
-    transition: all 0.2s ease;
 }
 
 .close-btn:hover {
     background: rgba(239, 68, 68, 0.2);
 }
 
-/* Loading State */
+@keyframes slideDown {
+    from { transform: translateY(-10px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+/* ===========================
+   Loading
+=========================== */
 .loading-container {
+    height: 100vh;
     display: flex;
     flex-direction: column;
+    justify-content: center; 
     align-items: center;
+    gap: 10px;
+    font-size: 36px;
 }
+

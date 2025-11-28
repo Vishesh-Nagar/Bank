@@ -1,0 +1,23 @@
+.accounts-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 24px;
+    margin-bottom: 32px;
+}
+
+.no-accounts {
+    text-align: center;
+    color: #64748b;
+    font-size: 18px;
+    padding: 80px 40px;
+    background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+    border-radius: 16px;
+    border: 2px dashed rgba(255, 255, 255, 0.1);
+}
+
+.no-accounts p:first-child {
+    font-size: 24px;
+    font-weight: 600;
+    color: #94a3b8;
+    margin-bottom: 12px;
+}

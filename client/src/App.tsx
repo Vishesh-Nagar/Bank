@@ -11,38 +11,40 @@ import "./App.css";
 const App: React.FC = () => {
     return (
         <BrowserRouter>
-            <Routes>
-                <Route path="/" element={<Home />} />
-                <Route
-                    path="/login"
-                    element={
-                        isAuthenticated() ? (
-                            <Navigate to="/dashboard" replace />
-                        ) : (
-                            <Login />
-                        )
-                    }
-                />
-                <Route
-                    path="/register"
-                    element={
-                        isAuthenticated() ? (
-                            <Navigate to="/dashboard" replace />
-                        ) : (
-                            <Register />
-                        )
-                    }
-                />
-                <Route
-                    path="/dashboard"
-                    element={
-                        <ProtectedRoute>
-                            <Dashboard />
-                        </ProtectedRoute>
-                    }
-                />
-                <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
+            <div className="page-fade-in">
+                <Routes>
+                    <Route path="/" element={<Home />} />
+                    <Route
+                        path="/login"
+                        element={
+                            isAuthenticated() ? (
+                                <Navigate to="/dashboard" replace />
+                            ) : (
+                                <Login />
+                            )
+                        }
+                    />
+                    <Route
+                        path="/register"
+                        element={
+                            isAuthenticated() ? (
+                                <Navigate to="/dashboard" replace />
+                            ) : (
+                                <Register />
+                            )
+                        }
+                    />
+                    <Route
+                        path="/dashboard"
+                        element={
+                            <ProtectedRoute>
+                                <Dashboard />
+                            </ProtectedRoute>
+                        }
+                    />
+                    <Route path="*" element={<Navigate to="/" replace />} />
+                </Routes>
+            </div>
         </BrowserRouter>
     );
 };

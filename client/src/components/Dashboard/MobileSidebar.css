@@ -1,0 +1,56 @@
+.sidebar-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.7);
+    z-index: 1000;
+    display: flex;
+    justify-content: flex-start;
+}
+
+.sidebar {
+    background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+    width: 280px;
+    height: 100vh;
+    padding: 24px;
+    box-shadow: 4px 0 20px rgba(0, 0, 0, 0.5);
+    border-top-right-radius: 16px;
+    border-bottom-right-radius: 16px;
+}
+
+.sidebar-content {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+.close-sidebar {
+    align-self: flex-end;
+    background: none;
+    border: none;
+    color: #ffffff;
+    font-size: 24px;
+    padding: 8px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.close-sidebar:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.sidebar .username {
+    padding: 16px 24px;
+    font-size: 16px;
+    color: #cbd5e1;
+    background: rgba(0, 0, 0, 0.4);
+    border-radius: 10px;
+    text-align: center;
+}
+
+.sidebar .btn {
+    margin-top: auto;
+}

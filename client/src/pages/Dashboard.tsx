@@ -7,17 +7,23 @@ import {
     withdraw,
     deleteAccount,
 } from "../services/accountService";
-import type { AccountDto, AccountCreateDto, AccountType } from "../types";
+import type { AccountDto, AccountCreateDto } from "../types";
 import "./Dashboard.css";
 import {
     isAuthenticated,
     logout,
     getCurrentUser,
 } from "../services/userService";
+import DashboardHeader from "../components/Dashboard/DashboardHeader";
+import MobileSidebar from "../components/Dashboard/MobileSidebar";
+import SummaryCards from "../components/Dashboard/SummaryCards";
+import AccountsGrid from "../components/Dashboard/AccountsGrid";
+import CreateAccountModal from "../components/Dashboard/modals/CreateAccountModal";
+import TransactionModal from "../components/Dashboard/modals/TransactionModal";
 
 const Dashboard: React.FC = () => {
     const navigate = useNavigate();
-    const [accounts, setAccounts] = useState<AccountDto[]>([]); // Ensure initial value is array
+    const [accounts, setAccounts] = useState<AccountDto[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string>("");
     const [showCreateModal, setShowCreateModal] = useState(false);
@@ -27,8 +33,6 @@ const Dashboard: React.FC = () => {
     const [transactionModal, setTransactionModal] = useState<
         "deposit" | "withdraw" | null
     >(null);
-
-    // Form states
     const currentUser = getCurrentUser();
     const [newAccount, setNewAccount] = useState<AccountCreateDto>({
         accountHolderName: currentUser?.username || "",
@@ -43,35 +47,31 @@ const Dashboard: React.FC = () => {
     }, []);
 
     const fetchAccounts = async () => {
-        // Check if user is authenticated
         if (!isAuthenticated()) {
             navigate("/login");
             return;
         }
-
         try {
             setLoading(true);
             setError("");
             const data = await getAllAccounts();
-            const currentUser = getCurrentUser();
-
-            // Ensure data is always an array and filter to current user's accounts
+            const cur = getCurrentUser();
             if (Array.isArray(data)) {
-                setAccounts(data.filter(acc => acc.accountHolderName === currentUser?.username));
+                setAccounts(
+                    data.filter(
+                        (acc) => acc.accountHolderName === cur?.username
+                    )
+                );
             } else {
-                console.error("API returned non-array data:", data);
                 setAccounts([]);
                 setError("Received invalid data format from server");
             }
         } catch (err: any) {
-            console.error("Error fetching accounts:", err);
             if (err.response?.status === 401) {
-                logout(); // Clear stored user data
+                logout();
                 navigate("/login");
             } else {
-                setError(
-                    err.response?.data?.message || "Failed to fetch accounts"
-                );
+                setError(err.response?.data?.message || "Failed to fetch accounts");
                 setAccounts([]);
             }
         } finally {
@@ -79,64 +79,56 @@ const Dashboard: React.FC = () => {
         }
     };
 
-    const handleCreateAccount = async (e: React.FormEvent) => {
-        e.preventDefault();
+    const handleCreateAccount = async (payload: AccountCreateDto) => {
         try {
             setError("");
-            await createAccount(newAccount);
+            await createAccount(payload);
             setShowCreateModal(false);
             setNewAccount({
-                accountHolderName: "",
+                accountHolderName: currentUser?.username || "",
                 balance: 0,
                 accountType: "SAVINGS",
             });
-            await fetchAccounts(); // Refresh accounts list
+            await fetchAccounts();
         } catch (err: any) {
-            console.error("Error creating account:", err);
             setError(err.response?.data?.message || "Failed to create account");
         }
     };
 
     const handleDeposit = async () => {
         if (!selectedAccount || !transactionAmount) return;
-
         const amount = parseFloat(transactionAmount);
         if (isNaN(amount) || amount <= 0) {
             setError("Please enter a valid amount");
             return;
         }
-
         try {
             setError("");
             await deposit(selectedAccount.id, amount);
             setTransactionModal(null);
             setSelectedAccount(null);
             setTransactionAmount("");
-            await fetchAccounts(); // Refresh accounts list
+            await fetchAccounts();
         } catch (err: any) {
-            console.error("Error depositing:", err);
             setError(err.response?.data?.message || "Failed to deposit");
         }
     };
 
     const handleWithdraw = async () => {
         if (!selectedAccount || !transactionAmount) return;
-
         const amount = parseFloat(transactionAmount);
         if (isNaN(amount) || amount <= 0) {
             setError("Please enter a valid amount");
             return;
         }
-
         try {
             setError("");
             await withdraw(selectedAccount.id, amount);
             setTransactionModal(null);
             setSelectedAccount(null);
             setTransactionAmount("");
-            await fetchAccounts(); // Refresh accounts list
+            await fetchAccounts();
         } catch (err: any) {
-            console.error("Error withdrawing:", err);
             setError(
                 err.response?.data?.message ||
                     err.response?.data ||
@@ -148,13 +140,11 @@ const Dashboard: React.FC = () => {
     const handleDeleteAccount = async (id: number) => {
         if (!window.confirm("Are you sure you want to delete this account?"))
             return;
-
         try {
             setError("");
             await deleteAccount(id);
-            await fetchAccounts(); // Refresh accounts list
+            await fetchAccounts();
         } catch (err: any) {
-            console.error("Error deleting account:", err);
             setError(err.response?.data?.message || "Failed to delete account");
         }
     };
@@ -176,57 +166,21 @@ const Dashboard: React.FC = () => {
 
     return (
         <div className="dashboard">
-            <header className="dashboard-header">
-                <button
-                    className="hamburger-menu"
-                    onClick={() => setIsSidebarOpen(true)}
-                    aria-label="Open menu"
-                >
-                    ☰
-                </button>
-                <h1>Banking Dashboard</h1>
-                <div className="header-right">
-                    <span className="username">
-                        Welcome, {getCurrentUser()?.username}
-                    </span>
-                    <div className="header-buttons">
-                        <button
-                            onClick={handleLogout}
-                            className="btn btn-secondary"
-                        >
-                            Logout
-                        </button>
-                    </div>
-                </div>
-            </header>
+            <DashboardHeader
+                onOpenSidebar={() => setIsSidebarOpen(true)}
+                username={currentUser?.username || ""}
+                onLogout={handleLogout}
+            />
 
-            {/* Mobile Sidebar - Only show on mobile devices */}
             {isSidebarOpen && (
-                <div className="sidebar-overlay" onClick={() => setIsSidebarOpen(false)}>
-                    <div className="sidebar" onClick={(e) => e.stopPropagation()}>
-                        <div className="sidebar-content">
-                            <button
-                                className="close-sidebar"
-                                onClick={() => setIsSidebarOpen(false)}
-                                aria-label="Close menu"
-                            >
-                                ✕
-                            </button>
-                            <span className="username">
-                                Welcome, {getCurrentUser()?.username}
-                            </span>
-                            <button
-                                onClick={() => {
-                                    setIsSidebarOpen(false);
-                                    handleLogout();
-                                }}
-                                className="btn btn-secondary"
-                            >
-                                Logout
-                            </button>
-                        </div>
-                    </div>
-                </div>
+                <MobileSidebar
+                    username={currentUser?.username || ""}
+                    onClose={() => setIsSidebarOpen(false)}
+                    onLogout={() => {
+                        setIsSidebarOpen(false);
+                        handleLogout();
+                    }}
+                />
             )}
 
             {error && (
@@ -250,289 +204,57 @@ const Dashboard: React.FC = () => {
                 </button>
             </div>
 
-            <div className="accounts-summary">
-                <div className="summary-card">
-                    <h3>Total Accounts</h3>
-                    <p className="summary-value">{accounts.length}</p>
-                </div>
-                <div className="summary-card">
-                    <h3>Total Balance</h3>
-                    <p className="summary-value">
-                        $
-                        {accounts
-                            .reduce((sum, acc) => sum + acc.balance, 0)
-                            .toFixed(2)}
-                    </p>
-                </div>
-            </div>
+            <SummaryCards accounts={accounts} />
 
-            <div className="accounts-grid">
-                {accounts.length === 0 ? (
-                    <div className="no-accounts">
-                        <p>No accounts found.</p>
-                        <p>Create your first account to get started!</p>
-                    </div>
-                ) : (
-                    accounts.map((account) => (
-                        <div key={account.id} className="account-card">
-                            <div className="account-header">
-                                <h3>{account.accountHolderName}</h3>
-                                <span
-                                    className={`account-type ${account.accountType.toLowerCase()}`}
-                                >
-                                    {account.accountType}
-                                </span>
-                            </div>
+            <AccountsGrid
+                accounts={accounts}
+                onDeposit={(acc) => {
+                    setSelectedAccount(acc);
+                    setTransactionModal("deposit");
+                    setTransactionAmount("");
+                }}
+                onWithdraw={(acc) => {
+                    setSelectedAccount(acc);
+                    setTransactionModal("withdraw");
+                    setTransactionAmount("");
+                }}
+                onDelete={(id) => handleDeleteAccount(id)}
+            />
 
-                            <div className="account-id">
-                                <small>Account ID: {account.id}</small>
-                            </div>
+            <CreateAccountModal
+                visible={showCreateModal}
+                onClose={() => {
+                    setShowCreateModal(false);
+                    setNewAccount({
+                        accountHolderName: currentUser?.username || "",
+                        balance: 0,
+                        accountType: "SAVINGS",
+                    });
+                    setError("");
+                }}
+                newAccount={newAccount}
+                setNewAccount={setNewAccount}
+                onCreate={(payload) => handleCreateAccount(payload)}
+            />
 
-                            <div className="account-balance">
-                                <span className="balance-label">Balance:</span>
-                                <span className="balance-amount">
-                                    ${account.balance.toFixed(2)}
-                                </span>
-                            </div>
-
-                            <div className="account-actions">
-                                <button
-                                    onClick={() => {
-                                        setSelectedAccount(account);
-                                        setTransactionModal("deposit");
-                                        setTransactionAmount("");
-                                    }}
-                                    className="btn btn-success btn-sm"
-                                    title="Deposit money"
-                                >
-                                    💰 Deposit
-                                </button>
-                                <button
-                                    onClick={() => {
-                                        setSelectedAccount(account);
-                                        setTransactionModal("withdraw");
-                                        setTransactionAmount("");
-                                    }}
-                                    className="btn btn-warning btn-sm"
-                                    title="Withdraw money"
-                                >
-                                    💸 Withdraw
-                                </button>
-                                <button
-                                    onClick={() =>
-                                        handleDeleteAccount(account.id)
-                                    }
-                                    className="btn btn-danger btn-sm"
-                                    title="Delete account"
-                                >
-                                    🗑️ Delete
-                                </button>
-                            </div>
-                        </div>
-                    ))
-                )}
-            </div>
-
-            {/* Create Account Modal */}
-            {showCreateModal && (
-                <div
-                    className="modal-overlay"
-                    onClick={() => setShowCreateModal(false)}
-                >
-                    <div className="modal" onClick={(e) => e.stopPropagation()}>
-                        <h2>Create New Account</h2>
-                        <form onSubmit={handleCreateAccount}>
-
-                            <div className="form-group">
-                                <label htmlFor="initialBalance">
-                                    Initial Balance:
-                                </label>
-                                <input
-                                    id="initialBalance"
-                                    type="number"
-                                    step="0.01"
-                                    min="0"
-                                    value={newAccount.balance}
-                                    onChange={(e) =>
-                                        setNewAccount({
-                                            ...newAccount,
-                                            balance:
-                                                parseFloat(e.target.value) || 0,
-                                        })
-                                    }
-                                    placeholder="0.00"
-                                    required
-                                />
-                            </div>
-
-                            <div className="form-group">
-                                <label htmlFor="accountType">
-                                    Account Type:
-                                </label>
-                                <select
-                                    id="accountType"
-                                    value={newAccount.accountType}
-                                    onChange={(e) =>
-                                        setNewAccount({
-                                            ...newAccount,
-                                            accountType: e.target
-                                                .value as AccountType,
-                                        })
-                                    }
-                                >
-                                    <option value="SAVINGS">
-                                        Savings Account
-                                    </option>
-                                    <option value="CURRENT">
-                                        Current Account
-                                    </option>
-                                </select>
-                            </div>
-
-                            <div className="modal-actions">
-                                <button
-                                    type="submit"
-                                    className="btn btn-primary"
-                                >
-                                    Create Account
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        setShowCreateModal(false);
-                                        setNewAccount({
-                                            accountHolderName: currentUser?.username || "",
-                                            balance: 0,
-                                            accountType: "SAVINGS",
-                                        });
-                                    }}
-                                    className="btn btn-secondary"
-                                >
-                                    Cancel
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            )}
-
-            {/* Transaction Modal */}
-            {transactionModal && selectedAccount && (
-                <div
-                    className="modal-overlay"
-                    onClick={() => {
-                        setTransactionModal(null);
-                        setTransactionAmount("");
-                        setError("");
-                    }}
-                >
-                    <div className="modal" onClick={(e) => e.stopPropagation()}>
-                        <h2>
-                            {transactionModal === "deposit"
-                                ? "💰 Deposit Money"
-                                : "💸 Withdraw Money"}
-                        </h2>
-
-                        <div className="transaction-info">
-                            <p>
-                                <strong>Account:</strong>{" "}
-                                {selectedAccount.accountHolderName}
-                            </p>
-                            <p>
-                                <strong>Type:</strong>{" "}
-                                {selectedAccount.accountType}
-                            </p>
-                            <p>
-                                <strong>Current Balance:</strong> $
-                                {selectedAccount.balance.toFixed(2)}
-                            </p>
-                        </div>
-
-                        <div className="form-group">
-                            <label htmlFor="transactionAmount">Amount:</label>
-                            <input
-                                id="transactionAmount"
-                                type="number"
-                                step="0.01"
-                                min="0.01"
-                                value={transactionAmount}
-                                onChange={(e) => {
-                                    setTransactionAmount(e.target.value);
-                                    if (transactionModal === "withdraw") {
-                                        const amount = parseFloat(e.target.value);
-                                        if (amount > selectedAccount.balance) {
-                                            setError("Cannot withdraw amount more than current balance");
-                                        } else if (error === "Cannot withdraw amount more than current balance") {
-                                            setError("");
-                                        }
-                                    }
-                                }}
-                                placeholder="Enter amount"
-                                autoFocus
-                            />
-                        </div>
-
-                        {transactionModal === "withdraw" && error && (
-                            <div className="error-message">
-                                <span>⚠️ {error}</span>
-                            </div>
-                        )}
-
-                        {transactionAmount &&
-                            parseFloat(transactionAmount) > 0 && (
-                                <div className="transaction-preview">
-                                    <p>
-                                        New Balance: $
-                                        {transactionModal === "deposit"
-                                            ? (
-                                                  selectedAccount.balance +
-                                                  parseFloat(transactionAmount)
-                                              ).toFixed(2)
-                                            : (
-                                                  selectedAccount.balance -
-                                                  parseFloat(transactionAmount)
-                                              ).toFixed(2)}
-                                    </p>
-                                </div>
-                            )}
-
-                        <div className="modal-actions">
-                            <button
-                                onClick={
-                                    transactionModal === "deposit"
-                                        ? handleDeposit
-                                        : handleWithdraw
-                                }
-                                className={`btn ${
-                                    transactionModal === "deposit"
-                                        ? "btn-success"
-                                        : "btn-warning"
-                                }`}
-                                disabled={
-                                    !transactionAmount ||
-                                    parseFloat(transactionAmount) <= 0 ||
-                                    (transactionModal === "withdraw" &&
-                                        parseFloat(transactionAmount) > selectedAccount.balance)
-                                }
-                            >
-                                {transactionModal === "deposit"
-                                    ? "Deposit"
-                                    : "Withdraw"}
-                            </button>
-                            <button
-                                onClick={() => {
-                                    setTransactionModal(null);
-                                    setTransactionAmount("");
-                                    setError("");
-                                }}
-                                className="btn btn-secondary"
-                            >
-                                Cancel
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
+            <TransactionModal
+                visible={!!transactionModal && !!selectedAccount}
+                mode={transactionModal}
+                account={selectedAccount}
+                amount={transactionAmount}
+                setAmount={setTransactionAmount}
+                onCancel={() => {
+                    setTransactionModal(null);
+                    setTransactionAmount("");
+                    setError("");
+                    setSelectedAccount(null);
+                }}
+                onConfirm={
+                    transactionModal === "deposit" ? handleDeposit : handleWithdraw
+                }
+                error={error}
+                setError={setError}
+            />
         </div>
     );
 };
