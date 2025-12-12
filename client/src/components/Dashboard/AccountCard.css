@@ -75,6 +75,7 @@
     padding: 20px;
     display: flex;
     justify-content: space-between;
+    align-items: center;
     background: rgba(30, 41, 59, 0.5);
     border-radius: 12px;
     margin-bottom: 20px;
