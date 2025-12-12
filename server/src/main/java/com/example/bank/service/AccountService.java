@@ -18,4 +18,6 @@ public interface AccountService {
     List<AccountDto> getAllAccounts();
 
     void deleteAccount(Long id);
+
+    void transfer(Long fromId, Long toId, double amount);
 }

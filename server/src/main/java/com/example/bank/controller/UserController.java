@@ -1,20 +1,12 @@
 package com.example.bank.controller;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpSession;
-import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import com.example.bank.dto.LoginDto;
 import com.example.bank.dto.LoginResponseDto;
 import com.example.bank.dto.UserCreateDto;
 import com.example.bank.dto.UserDto;
 import com.example.bank.service.UserService;
-import jakarta.servlet.http.HttpSession;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;

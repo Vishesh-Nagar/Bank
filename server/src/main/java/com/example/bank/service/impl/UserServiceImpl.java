@@ -10,7 +10,6 @@ import com.example.bank.mapper.UserMapper;
 import com.example.bank.repository.UserRepository;
 import com.example.bank.service.UserService;
 import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.springframework.stereotype.Service;
@@ -35,11 +34,11 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public UserDto createUser(UserCreateDto userCreateDto) {
-        userRepository.findByUsername(userCreateDto.getUsername()).ifPresent(u -> {
+        userRepository.findByUsername(userCreateDto.getUsername()).ifPresent(_ -> {
             throw new UserException("Username already exists");
         });
 
-        userRepository.findByEmail(userCreateDto.getEmail()).ifPresent(u -> {
+        userRepository.findByEmail(userCreateDto.getEmail()).ifPresent(_ -> {
             throw new UserException("Email already exists");
         });
 
@@ -71,14 +70,14 @@ public class UserServiceImpl implements UserService {
                 .orElseThrow(() -> new UserException("User not found"));
 
         if (userDto.getUsername() != null && !userDto.getUsername().equals(user.getUsername())) {
-            userRepository.findByUsername(userDto.getUsername()).ifPresent(u -> {
+            userRepository.findByUsername(userDto.getUsername()).ifPresent(_ -> {
                 throw new UserException("Username already exists");
             });
             user.setUsername(userDto.getUsername());
         }
 
         if (userDto.getEmail() != null && !userDto.getEmail().equals(user.getEmail())) {
-            userRepository.findByEmail(userDto.getEmail()).ifPresent(u -> {
+            userRepository.findByEmail(userDto.getEmail()).ifPresent(_ -> {
                 throw new UserException("Email already exists");
             });
             user.setEmail(userDto.getEmail());
@@ -119,10 +118,7 @@ public class UserServiceImpl implements UserService {
         Date now = new Date();
         Date expiryDate = new Date(now.getTime() + EXPIRATION_TIME);
 
-        return Jwts.builder()
-                .setSubject(user.getUsername())
-                .setIssuedAt(now)
-                .setExpiration(expiryDate)
+        return Jwts.builder().subject(user.getUsername()).issuedAt(now).expiration(expiryDate)
                 .signWith(SECRET_KEY)
                 .compact();
     }
