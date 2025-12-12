@@ -50,6 +50,7 @@ public class AccountServiceImpl implements AccountService {
         return AccountMapper.mapToAccountDto(account);
     }
 
+    @Transactional
     @Override
     public AccountDto deposit(Long id, double amount) {
         Account account = accountRepository.findByIdForUpdate(id);
@@ -59,6 +60,7 @@ public class AccountServiceImpl implements AccountService {
         return AccountMapper.mapToAccountDto(saved);
     }
 
+    @Transactional
     @Override
     public AccountDto withdraw(Long id, double amount) {
         Account account = accountRepository.findByIdForUpdate(id);
@@ -91,6 +93,7 @@ public class AccountServiceImpl implements AccountService {
         return accounts.stream().map(AccountMapper::mapToAccountDto).collect(Collectors.toList());
     }
 
+    @Transactional
     @Override
     public void deleteAccount(Long id) {
         Account account = accountRepository.findById(id)
@@ -127,6 +130,7 @@ public class AccountServiceImpl implements AccountService {
         }
     }
 
+    @Transactional
     @Override
     public void transfer(Long fromId, Long toId, double amount) {
         if (fromId.equals(toId)) {
