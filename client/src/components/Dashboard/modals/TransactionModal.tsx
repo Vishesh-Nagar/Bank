@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import type { AccountDto } from "../../../types";
 import "./TransactionModal.css";
 
@@ -9,7 +9,7 @@ type Props = {
     amount: string;
     setAmount: (s: string) => void;
     onCancel: () => void;
-    onConfirm: () => void;
+    onConfirm: () => void | Promise<void>;
     error: string;
     setError: (s: string) => void;
 };
@@ -27,6 +27,19 @@ const TransactionModal: React.FC<Props> = ({
 }) => {
     if (!visible || !account || !mode) return null;
     const isWithdraw = mode === "withdraw";
+    const [submitting, setSubmitting] = useState(false);
+
+    const handleConfirm = async () => {
+        if (submitting) return;
+        setSubmitting(true);
+        try {
+            const res = onConfirm();
+            if (res && typeof (res as any).then === "function") await res;
+        } finally {
+            setTimeout(() => setSubmitting(false), 800);
+        }
+    };
+
     return (
         <div className="modal-overlay" onClick={onCancel}>
             <div className="modal" onClick={(e) => e.stopPropagation()}>
@@ -78,9 +91,10 @@ const TransactionModal: React.FC<Props> = ({
 
                 <div className="modal-actions">
                     <button
-                        onClick={onConfirm}
+                        onClick={handleConfirm}
                         className={`btn ${isWithdraw ? "btn-warning" : "btn-success"}`}
                         disabled={
+                            submitting ||
                             !amount ||
                             parseFloat(amount) <= 0 ||
                             (isWithdraw && parseFloat(amount) > account.balance)

@@ -249,9 +249,7 @@ const Dashboard: React.FC = () => {
                     setError("");
                     setSelectedAccount(null);
                 }}
-                onConfirm={
-                    transactionModal === "deposit" ? handleDeposit : handleWithdraw
-                }
+                onConfirm={transactionModal === "deposit" ? handleDeposit : handleWithdraw}
                 error={error}
                 setError={setError}
             />
