@@ -1,229 +1,71 @@
-# Bank Application
+# Bank Application - Backend
 
-This is a simple banking application with a React frontend and a Spring Boot backend. It allows users to register, log in, and manage their bank accounts.
+This is the Spring Boot backend for the Bank Application. It provides a RESTful API for the frontend to interact with. It handles business logic, data persistence, and authentication.
 
-## Overall Flow
+## Features
 
-The application consists of two main parts:
-
-*   **Frontend:** A single-page application built with React and TypeScript. It provides the user interface for interacting with the application.
-*   **Backend:** A RESTful API built with Spring Boot and Java. It handles the business logic, data persistence, and authentication.
-
-The frontend communicates with the backend through REST API calls. The backend uses a MySQL database to store user and account information.
+*   **User Management:** Handles user registration and authentication using Spring Security.
+*   **Account Management:** Provides endpoints for creating, viewing, and deleting bank accounts.
+*   **Transactions:** Includes endpoints for depositing and withdrawing funds from an account.
+*   **Data Persistence:** Uses Spring Data JPA with Hibernate to interact with a MySQL database.
 
 ## Technologies Used
 
-*   **Frontend:** React, TypeScript, Vite
-*   **Backend:** Java, Spring Boot, Spring Security, JPA (Hibernate)
-*   **Database:** MySQL
+*   **Java:** The primary programming language for the backend.
+*   **Spring Boot:** A framework for creating stand-alone, production-grade Spring-based applications.
+*   **Spring Security:** Provides authentication and authorization for the application.
+*   **Spring Data JPA (Hibernate):** Used for data persistence and ORM.
+*   **MySQL:** The relational database used to store application data.
+*   **Maven:** A build automation tool used for managing the project's build, reporting, and documentation.
 
-## Installation Steps
+## Installation and Setup
 
 ### Prerequisites
 
 *   Java 21 or later
 *   Maven 3.x
-*   Node.js 18.x or later
-*   npm 9.x or later
 *   MySQL 8.x
 
-### Backend Setup
+### Database Setup
 
-1.  **Configure the database:**
-    *   Open the `src/main/resources/application.yaml` file.
-    *   Update the `spring.datasource.username` and `spring.datasource.password` properties with your MySQL credentials.
-    *   Make sure you have a database named `bank` in your MySQL server.
+1.  **Create a database:**
+    Make sure you have a MySQL server running and create a database named `bank`.
+
+2.  **Configure database credentials:**
+    Open the `src/main/resources/application.yaml` file and update the `spring.datasource.username` and `spring.datasource.password` properties with your MySQL credentials.
+
+### Running the Backend
+
+1.  **Navigate to the server directory:**
+    ```bash
+    cd server
+    ```
 
 2.  **Run the backend server:**
-    Open a terminal in the root directory of the project and run the following command:
+    Use the Maven wrapper to run the application:
     ```bash
     ./mvnw spring-boot:run
     ```
     The backend server will start on port `8080`.
 
-### Frontend Setup
-
-1.  **Install dependencies:**
-    Open a terminal in the `client` directory and run the following command:
-    ```bash
-    npm install
-    ```
-
-2.  **Run the frontend server:**
-    In the same terminal, run the following command:
-    ```bash
-    npm run dev
-    ```
-    The frontend development server will start on port `5173`.
-
-You can now access the application at `http://localhost:5173`.
-
 ## API Endpoints
+
+The backend provides the following REST API endpoints.
 
 ### User Endpoints
 
-#### `POST /api/users`
-
-Create a new user.
-
-**Request Body:**
-
-```json
-{
-  "username": "testuser",
-  "password": "password",
-  "email": "test@example.com"
-}
-```
-
-**Response:**
-
-```json
-{
-  "id": 1,
-  "username": "testuser",
-  "email": "test@example.com"
-}
-```
-
-#### `POST /api/users/login`
-
-Authenticate a user and get a token.
-
-**Request Body:**
-
-```json
-{
-  "username": "testuser",
-  "password": "password"
-}
-```
-
-**Response:**
-
-```json
-{
-    "user": {
-        "id": 1,
-        "username": "testuser",
-        "email": "test@example.com"
-    }
-}
-```
+*   `POST /api/users`: Create a new user.
+*   `POST /api/users/login`: Authenticate a user and get a token.
 
 ### Account Endpoints
 
 All account endpoints require authentication.
 
-#### `POST /api/accounts`
+*   `POST /api/accounts`: Create a new bank account for the authenticated user.
+*   `GET /api/accounts`: Get all accounts for the authenticated user.
+*   `GET /api/accounts/{id}`: Get an account by its ID.
+*   `PUT /api/accounts/{id}/deposit`: Deposit an amount into an account.
+*   `PUT /api/accounts/{id}/withdraw`: Withdraw an amount from an account.
+*   `DELETE /api/accounts/{id}`: Delete an account by its ID.
 
-Create a new bank account for the authenticated user.
-
-**Request Body:**
-
-```json
-{
-  "accountHolderName": "Test User",
-  "balance": 1000.0,
-  "accountType": "SAVINGS"
-}
-```
-
-**Response:**
-
-```json
-{
-  "id": 1,
-  "accountHolderName": "Test User",
-  "balance": 1000.0,
-  "accountType": "SAVINGS"
-}
-```
-
-#### `GET /api/accounts`
-
-Get all accounts for the authenticated user.
-
-**Response:**
-
-```json
-[
-  {
-    "id": 1,
-    "accountHolderName": "Test User",
-    "balance": 1000.0,
-    "accountType": "SAVINGS"
-  }
-]
-```
-
-#### `GET /api/accounts/{id}`
-
-Get an account by its ID. The user must be the owner of the account.
-
-**Response:**
-
-```json
-{
-  "id": 1,
-  "accountHolderName": "Test User",
-  "balance": 1000.0,
-  "accountType": "SAVINGS"
-}
-```
-
-#### `PUT /api/accounts/{id}/deposit`
-
-Deposit an amount into an account.
-
-**Request Body:**
-
-```json
-{
-  "amount": 500.0
-}
-```
-
-**Response:**
-
-```json
-{
-  "id": 1,
-  "accountHolderName": "Test User",
-  "balance": 1500.0,
-  "accountType": "SAVINGS"
-}
-```
-
-#### `PUT /api/accounts/{id}/withdraw`
-
-Withdraw an amount from an account.
-
-**Request Body:**
-
-```json
-{
-  "amount": 200.0
-}
-```
-
-**Response:**
-
-```json
-{
-  "id": 1,
-  "accountHolderName": "Test User",
-  "balance": 1300.0,
-  "accountType": "SAVINGS"
-}
-```
-
-#### `DELETE /api/accounts/{id}`
-
-Delete an account by its ID.
-
-**Response:**
-
-```
-Account deleted successfully
-```
+For detailed request and response formats, please refer to the code or use a tool like Postman to interact with the API.

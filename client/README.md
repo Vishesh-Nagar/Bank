@@ -1,95 +1,50 @@
 # Bank Application - Frontend
 
-This is the React frontend for the Bank Application. It provides the user interface for user registration, login, and account management, communicating with the Spring Boot backend via REST API calls.
+This is the React frontend for the Bank Application. It provides a user-friendly interface for customers to manage their bank accounts. It communicates with the Spring Boot backend via REST API calls to handle user authentication, account management, and transactions.
+
+## Features
+
+*   User registration and login with authentication.
+*   View all bank accounts associated with the logged-in user.
+*   Create new bank accounts.
+*   View details of a specific account.
+*   Perform deposits and withdrawals on an account.
+*   Delete an account.
 
 ## Technologies Used
 
-- React
-- TypeScript
-- Vite
+*   **React:** A JavaScript library for building user interfaces.
+*   **TypeScript:** A typed superset of JavaScript that compiles to plain JavaScript.
+*   **Vite:** A fast build tool and development server for modern web projects.
+*   **REST API:** Communication with the backend is done via RESTful API calls.
 
-## Installation Steps
+## Installation and Setup
 
 ### Prerequisites
 
-- Node.js 18.x or later
-- npm 9.x or later
+*   Node.js 18.x or later
+*   npm 9.x or later
 
-### Frontend Setup
+### Running the Frontend
 
-1. **Install dependencies:**
-   Open a terminal in the `client` directory and run the following command:
-   ```bash
-   npm install
-   ```
+1.  **Navigate to the client directory:**
+    ```bash
+    cd client
+    ```
 
-2. **Run the development server:**
-   In the same terminal, run the following command:
-   ```bash
-   npm run dev
-   ```
-   The frontend development server will start on port `5173`.
+2.  **Install dependencies:**
+    Run the following command to install the necessary packages:
+    ```bash
+    npm install
+    ```
 
-You can access the application at `http://localhost:5173`.
+3.  **Run the development server:**
+    To start the frontend development server, run:
+    ```bash
+    npm run dev
+    ```
+    The frontend will be available at `http://localhost:5173`.
 
-For backend setup, database configuration, and full application flow, refer to the server README.
+## Communicating with the Backend
 
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
-
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
-
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+The frontend expects the backend server to be running on `http://localhost:8080`. The backend server provides the necessary REST APIs for the application to function. Please refer to the `server/README.md` for instructions on how to set up and run the backend.
