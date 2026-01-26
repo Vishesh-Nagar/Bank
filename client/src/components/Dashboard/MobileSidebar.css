@@ -7,7 +7,7 @@
     background: rgba(0, 0, 0, 0.7);
     z-index: 1000;
     display: flex;
-    justify-content: flex-start;
+    justify-content: flex-end;
 }
 
 .sidebar {
@@ -15,9 +15,9 @@
     width: 280px;
     height: 100vh;
     padding: 24px;
-    box-shadow: 4px 0 20px rgba(0, 0, 0, 0.5);
-    border-top-right-radius: 16px;
-    border-bottom-right-radius: 16px;
+    box-shadow: -4px 0 20px rgba(0, 0, 0, 0.5);
+    border-top-left-radius: 16px;
+    border-bottom-left-radius: 16px;
 }
 
 .sidebar-content {

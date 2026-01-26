@@ -55,16 +55,25 @@ const TransactionModal: React.FC<Props> = ({
                     <label htmlFor="transactionAmount">Amount:</label>
                     <input
                         id="transactionAmount"
-                        type="number"
-                        step="0.01"
-                        min="0.01"
+                        type="text"
+                        inputMode="decimal"
                         value={amount}
                         onChange={(e) => {
-                            setAmount(e.target.value);
-                            if (isWithdraw) {
-                                const v = parseFloat(e.target.value);
-                                if (v > account.balance) setError("Cannot withdraw amount more than current balance");
-                                else if (error === "Cannot withdraw amount more than current balance") setError("");
+                            const value = e.target.value;
+                            // Allow only numbers and one decimal point, up to 2 decimal places
+                            if (value === "" || /^\d*\.?\d{0,2}$/.test(value)) {
+                                setAmount(value);
+
+                                if (isWithdraw) {
+                                    const v = parseFloat(value);
+                                    if (!isNaN(v) && v > account.balance) {
+                                        setError("Cannot withdraw amount more than current balance");
+                                    } else if (error === "Cannot withdraw amount more than current balance") {
+                                        setError("");
+                                    }
+                                } else if (error === "Cannot withdraw amount more than current balance") {
+                                    setError("");
+                                }
                             }
                         }}
                         placeholder="Enter amount"
@@ -78,7 +87,7 @@ const TransactionModal: React.FC<Props> = ({
                     </div>
                 )}
 
-                {amount && parseFloat(amount) > 0 && (
+                {amount && !isNaN(parseFloat(amount)) && parseFloat(amount) > 0 && (
                     <div className="transaction-preview">
                         <p>
                             New Balance: $
@@ -96,6 +105,7 @@ const TransactionModal: React.FC<Props> = ({
                         disabled={
                             submitting ||
                             !amount ||
+                            isNaN(parseFloat(amount)) ||
                             parseFloat(amount) <= 0 ||
                             (isWithdraw && parseFloat(amount) > account.balance)
                         }

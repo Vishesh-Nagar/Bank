@@ -35,14 +35,15 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode, onModeChange }) => {
             } else {
                 const user: UserCreateDto = { username, password, email };
                 await register(user);
+                await login({ username, password });
                 navigate("/dashboard");
             }
-        } catch (err) {
-            setError(
+        } catch (err: any) {
+            const defaultMessage =
                 mode === "login"
                     ? "Failed to login. Please try again."
-                    : "Failed to register. Please try again."
-            );
+                    : "Failed to register. Please try again.";
+            setError(err.response?.data?.message || err.message || defaultMessage);
         }
     };
 

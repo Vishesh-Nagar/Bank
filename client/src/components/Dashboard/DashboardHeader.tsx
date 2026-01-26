@@ -10,6 +10,7 @@ type Props = {
 const DashboardHeader: React.FC<Props> = ({ onOpenSidebar, username, onLogout }) => {
     return (
         <header className="dashboard-header">
+            <h1>Banking Dashboard</h1>
             <button
                 className="hamburger-menu"
                 onClick={onOpenSidebar}
@@ -17,7 +18,6 @@ const DashboardHeader: React.FC<Props> = ({ onOpenSidebar, username, onLogout })
             >
                 ☰
             </button>
-            <h1>Banking Dashboard</h1>
             <div className="header-right">
                 <span className="username">Welcome, {username}</span>
                 <div className="header-buttons">

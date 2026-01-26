@@ -7,6 +7,7 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -21,12 +22,11 @@ import java.io.IOException;
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
-    private static final String JWT_SECRET = "mySecretKeyForJWTTokenGenerationAndValidationInBankApplication12345";
-    private static final SecretKey SECRET_KEY = Keys.hmacShaKeyFor(JWT_SECRET.getBytes());
-
+    private final String jwtSecret;
     private final UserDetailsService userDetailsService;
 
-    public JwtAuthenticationFilter(UserDetailsService userDetailsService) {
+    public JwtAuthenticationFilter(@Value("${jwt.secret}") String jwtSecret, UserDetailsService userDetailsService) {
+        this.jwtSecret = jwtSecret;
         this.userDetailsService = userDetailsService;
     }
 
@@ -40,11 +40,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             final String token = authHeader.substring(7);
 
             try {
+                SecretKey secretKey = Keys.hmacShaKeyFor(jwtSecret.getBytes());
                 Claims claims = Jwts
                         .parser()
-                        .verifyWith(SECRET_KEY)    // or setSigningKey(KEY) if key type matches
+                        .verifyWith(secretKey)
                         .build()
-                        .parseSignedClaims(token)  // for JWS (signed JWT)
+                        .parseSignedClaims(token)
                         .getPayload();
 
                 String username = claims.getSubject();

@@ -11,12 +11,12 @@ const SummaryCards: React.FC<Props> = ({ accounts }) => {
     return (
         <div className="accounts-summary">
             <div className="summary-card">
-                <h3>Total Accounts</h3>
-                <p className="summary-value">{accounts.length}</p>
-            </div>
-            <div className="summary-card">
                 <h3>Total Balance</h3>
                 <p className="summary-value">${totalBalance.toFixed(2)}</p>
+            </div>
+            <div className="summary-card">
+                <h3>Total Accounts</h3>
+                <p className="summary-value">{accounts.length}</p>
             </div>
         </div>
     );

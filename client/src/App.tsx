@@ -5,7 +5,7 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import ProtectedRoute from "./components/ProtectedRoute";
-import { isAuthenticated } from "./services/userService";
+import PublicRoute from "./components/PublicRoute";
 import "./App.css";
 
 const App: React.FC = () => {
@@ -17,21 +17,17 @@ const App: React.FC = () => {
                     <Route
                         path="/login"
                         element={
-                            isAuthenticated() ? (
-                                <Navigate to="/dashboard" replace />
-                            ) : (
+                            <PublicRoute>
                                 <Login />
-                            )
+                            </PublicRoute>
                         }
                     />
                     <Route
                         path="/register"
                         element={
-                            isAuthenticated() ? (
-                                <Navigate to="/dashboard" replace />
-                            ) : (
+                            <PublicRoute>
                                 <Register />
-                            )
+                            </PublicRoute>
                         }
                     />
                     <Route

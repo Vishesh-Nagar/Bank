@@ -4,6 +4,7 @@ import com.example.bank.dto.LoginResponseDto;
 import com.example.bank.dto.UserCreateDto;
 import com.example.bank.dto.UserDto;
 import com.example.bank.service.UserService;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -25,7 +26,7 @@ public class UserController {
 
     // Create User
     @PostMapping
-    public ResponseEntity<UserDto> createUser(@RequestBody UserCreateDto userCreateDto) {
+    public ResponseEntity<UserDto> createUser(@Valid @RequestBody UserCreateDto userCreateDto) {
         UserDto createdUser = userService.createUser(userCreateDto);
         return new ResponseEntity<>(createdUser, HttpStatus.CREATED);
     }
@@ -61,7 +62,7 @@ public class UserController {
     // UserController.java
     @PostMapping("/login")
     public ResponseEntity<LoginResponseDto> login(
-            @RequestBody LoginDto loginDto
+            @Valid @RequestBody LoginDto loginDto
     ) {
         try {
             // Use only your custom service—NO Spring Security authentication!

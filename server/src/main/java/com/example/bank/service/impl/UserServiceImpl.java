@@ -12,6 +12,7 @@ import com.example.bank.service.UserService;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import org.apache.commons.codec.digest.DigestUtils;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import javax.crypto.SecretKey;
@@ -22,14 +23,14 @@ import java.util.stream.Collectors;
 @Service
 public class UserServiceImpl implements UserService {
 
-    private static final String JWT_SECRET = "mySecretKeyForJWTTokenGenerationAndValidationInBankApplication12345";
-    private static final SecretKey SECRET_KEY = Keys.hmacShaKeyFor(JWT_SECRET.getBytes());
+    private final String jwtSecret;
     private static final long EXPIRATION_TIME = 86400000; // 24 hours
 
     private final UserRepository userRepository;
 
-    public UserServiceImpl(UserRepository userRepository) {
+    public UserServiceImpl(UserRepository userRepository, @Value("${jwt.secret}") String jwtSecret) {
         this.userRepository = userRepository;
+        this.jwtSecret = jwtSecret;
     }
 
     @Override
@@ -117,9 +118,10 @@ public class UserServiceImpl implements UserService {
     private String generateToken(UserDto user) {
         Date now = new Date();
         Date expiryDate = new Date(now.getTime() + EXPIRATION_TIME);
+        SecretKey secretKey = Keys.hmacShaKeyFor(jwtSecret.getBytes());
 
         return Jwts.builder().subject(user.getUsername()).issuedAt(now).expiration(expiryDate)
-                .signWith(SECRET_KEY)
+                .signWith(secretKey)
                 .compact();
     }
 }

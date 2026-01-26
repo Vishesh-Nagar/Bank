@@ -20,4 +20,6 @@ public interface AccountService {
     void deleteAccount(Long id);
 
     void transfer(Long fromId, Long toId, double amount);
+
+    boolean isAccountOwner(String username, Long accountId);
 }

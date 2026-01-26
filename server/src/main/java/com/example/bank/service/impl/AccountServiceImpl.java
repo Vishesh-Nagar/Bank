@@ -11,6 +11,7 @@ import com.example.bank.repository.AccountRepository;
 import com.example.bank.repository.UserRepository;
 import com.example.bank.service.AccountService;
 import jakarta.transaction.Transactional;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -46,7 +47,6 @@ public class AccountServiceImpl implements AccountService {
     public AccountDto getAccountById(Long id) {
         Account account = accountRepository.findById(id)
                 .orElseThrow(() -> new AccountException("Account does not exist"));
-        validateAccountOwner(account);
         return AccountMapper.mapToAccountDto(account);
     }
 
@@ -54,7 +54,6 @@ public class AccountServiceImpl implements AccountService {
     @Override
     public AccountDto deposit(Long id, double amount) {
         Account account = accountRepository.findByIdForUpdate(id);
-        validateAccountOwner(account);
         account.setBalance(account.getBalance() + amount);
         Account saved = accountRepository.save(account);
         return AccountMapper.mapToAccountDto(saved);
@@ -64,7 +63,6 @@ public class AccountServiceImpl implements AccountService {
     @Override
     public AccountDto withdraw(Long id, double amount) {
         Account account = accountRepository.findByIdForUpdate(id);
-        validateAccountOwner(account);
         double bal = account.getBalance();
         if (bal < amount) {
             throw new RuntimeException("Insufficient balance");
@@ -96,42 +94,12 @@ public class AccountServiceImpl implements AccountService {
     @Transactional
     @Override
     public void deleteAccount(Long id) {
-        Account account = accountRepository.findById(id)
-                .orElseThrow(() -> new AccountException("Account not found"));
-        validateAccountOwner(account);
         accountRepository.deleteById(id);
-    }
-
-    private User getAuthenticatedUser() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication == null) {
-            throw new UserException("User not authenticated");
-        }
-
-        Object principal = authentication.getPrincipal();
-        if (principal == null) {
-            throw new UserException("User not authenticated");
-        }
-
-        String username;
-        if (principal instanceof UserDetails userDetails) {
-            username = userDetails.getUsername();
-        } else {
-            username = principal.toString();
-        }
-        return userRepository.findByUsername(username)
-                .orElseThrow(() -> new UserException("User not found"));
-    }
-
-    private void validateAccountOwner(Account account) {
-        User user = getAuthenticatedUser();
-        if (!Objects.equals(account.getUser().getId(), user.getId())) {
-            throw new AccountException("You are not authorized to access this account");
-        }
     }
 
     @Transactional
     @Override
+    @PreAuthorize("@accountServiceImpl.isAccountOwner(principal.name, #fromId)")
     public void transfer(Long fromId, Long toId, double amount) {
         if (fromId.equals(toId)) {
             throw new RuntimeException("Cannot transfer to the same account");
@@ -146,8 +114,6 @@ public class AccountServiceImpl implements AccountService {
         Account from = fromId.equals(a1.getId()) ? a1 : a2;
         Account to = from.equals(a1) ? a2 : a1;
 
-        validateAccountOwner(from);
-
         if (from.getBalance() < amount) {
             throw new RuntimeException("Insufficient balance");
         }
@@ -157,5 +123,14 @@ public class AccountServiceImpl implements AccountService {
 
         accountRepository.save(from);
         accountRepository.save(to);
+    }
+
+    @Override
+    public boolean isAccountOwner(String username, Long accountId) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new UserException("User not found"));
+        Account account = accountRepository.findById(accountId)
+                .orElseThrow(() -> new AccountException("Account not found"));
+        return Objects.equals(account.getUser().getId(), user.getId());
     }
 }
