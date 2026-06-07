@@ -54,8 +54,10 @@ public class PaymentRequestDto {
     @NotNull(message = "Target account ID is required")
     private Long targetAccountId;
 
+    @NotNull(message = "Amount is required")
     @Positive(message = "Amount must be positive")
-    private double amount;
+    @Digits(integer = 15, fraction = 4, message = "Amount must have a valid format")
+    private BigDecimal amount;
 }
 ```
 
@@ -72,7 +74,7 @@ public class PaymentResponseDto {
     private String status;           // "QUEUED"
     private Long sourceAccountId;
     private Long targetAccountId;
-    private double amount;
+    private BigDecimal amount;
     private LocalDateTime submittedAt;
 }
 ```
@@ -115,6 +117,7 @@ public class PaymentController {
 public interface PaymentService {
     PaymentResponseDto initiatePayment(PaymentRequestDto request);
     PaymentStatusDto getStatus(String paymentId);
+    void markPaymentFailed(String paymentId, String reason);
 }
 ```
 
@@ -285,6 +288,7 @@ public class PaymentProducerService {
     private final KafkaTemplate<String, PaymentTask> kafkaTemplate;
     private final PaymentRepository paymentRepository;
 
+    @Transactional
     public void enqueue(PaymentTask task) {
         // Persist PENDING record
         Payment payment = new Payment();
@@ -312,12 +316,14 @@ public class PaymentTaskListener {
 
     private final PaymentRepository paymentRepository;
     private final AccountRepository accountRepository;
+    private final PaymentService paymentService;
 
     @KafkaListener(topics = "payments-topic", groupId = "payment-group")
     @Transactional
     public void consumePaymentTask(PaymentTask task) {
         Payment payment = paymentRepository.findById(task.getPaymentId()).orElseThrow();
-        if (payment.getStatus() != PaymentStatus.PENDING) return; // idempotency
+        if (payment.getStatus() != PaymentStatus.PENDING)
+            return; // idempotency
         
         try {
             Long first  = Math.min(task.getSourceAccountId(), task.getTargetAccountId());
@@ -341,12 +347,11 @@ public class PaymentTaskListener {
 
             payment.setStatus(PaymentStatus.COMPLETED);
             payment.setCompletedAt(LocalDateTime.now());
-        } catch (Exception e) {
-            payment.setStatus(PaymentStatus.FAILED);
-            payment.setFailureReason(e.getMessage());
-            payment.setCompletedAt(LocalDateTime.now());
-        } finally {
             paymentRepository.save(payment);
+        } catch (Exception e) {
+            // Execute status update in a new transaction so it persists 
+            // even if the current transaction is marked rollback-only.
+            paymentService.markPaymentFailed(payment.getId(), e.getMessage());
         }
     }
 }
@@ -364,6 +369,7 @@ public class PaymentServiceImpl implements PaymentService {
     private final AccountRepository accountRepository;
 
     @Override
+    @Transactional(readOnly = true)
     public PaymentResponseDto initiatePayment(PaymentRequestDto request) {
         Long sourceId = request.getSourceAccountId();
         Long targetId = request.getTargetAccountId();
@@ -386,8 +392,7 @@ public class PaymentServiceImpl implements PaymentService {
         }
 
         String paymentId = UUID.randomUUID().toString();
-        PaymentTask task = new PaymentTask(paymentId, sourceId, targetId,
-                BigDecimal.valueOf(request.getAmount()));
+        PaymentTask task = new PaymentTask(paymentId, sourceId, targetId, request.getAmount());
         paymentProducerService.enqueue(task);
 
         return new PaymentResponseDto(paymentId, "QUEUED", sourceId, targetId,
@@ -413,6 +418,19 @@ public class PaymentServiceImpl implements PaymentService {
                         p.getAmount(), p.getSubmittedAt(), p.getCompletedAt()))
                 .toList();
     }
+
+    @Override
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void markPaymentFailed(String paymentId, String reason) {
+        paymentRepository.findById(paymentId).ifPresent(payment -> {
+            if (payment.getStatus() == PaymentStatus.PENDING) {
+                payment.setStatus(PaymentStatus.FAILED);
+                payment.setFailureReason(reason);
+                payment.setCompletedAt(LocalDateTime.now());
+                paymentRepository.save(payment);
+            }
+        });
+    }
 }
 ```
 
@@ -424,11 +442,21 @@ public class PaymentServiceImpl implements PaymentService {
 `Account.balance` is currently `double`, which introduces floating-point precision errors (e.g. `100.1 + 200.2 = 300.29999...`).
 
 **Change**: `double balance` → `BigDecimal balance` in `Account`, `AccountDto`, `AccountMapper`, and `AccountServiceImpl`.
+You must also update the arithmetic in `PaymentTaskListener` since it relies on `double` math:
 
 ```java
 // Account.java
 @Column(nullable = false, precision = 19, scale = 4)
 private BigDecimal balance;
+```
+
+```java
+// PaymentTaskListener.java (after Phase 4)
+if (from.getBalance().compareTo(task.getAmount()) < 0) {
+    throw new PaymentException("Insufficient balance");
+}
+from.setBalance(from.getBalance().subtract(task.getAmount()));
+to.setBalance(to.getBalance().add(task.getAmount()));
 ```
 
 ---

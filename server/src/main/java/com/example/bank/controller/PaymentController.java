@@ -24,7 +24,7 @@ public class PaymentController {
     @PreAuthorize("@accountServiceImpl.isAccountOwner(principal.name, #request.sourceAccountId)")
     public ResponseEntity<PaymentResponseDto> initiatePayment(@Valid @RequestBody PaymentRequestDto request) {
         PaymentResponseDto response = paymentService.initiatePayment(request);
-        return ResponseEntity.accepted().body(response);
+        return ResponseEntity.accepted().body(response); // 202 Accepted - suitable for async working
     }
 
     // Poll payment status

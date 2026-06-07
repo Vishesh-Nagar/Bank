@@ -11,7 +11,7 @@ public class AccountMapper {
         return new AccountDto(
                 account.getId() != null ? account.getId() : null,
                 account.getAccountHolderName() != null ? account.getAccountHolderName() : null,
-                account.getBalance(), // double cannot be null
+                account.getBalance(),
                 account.getAccountType() != null ? account.getAccountType() : null
         );
     }

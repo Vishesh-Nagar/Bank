@@ -7,6 +7,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.math.BigDecimal;
+
 @NoArgsConstructor
 @AllArgsConstructor
 @Getter
@@ -21,8 +23,9 @@ public class Account {
 
     @Column(name = "account_holder_name")
     private String accountHolderName;
-    @Column(nullable = false)
-    private double balance;
+
+    @Column(nullable = false, precision = 10, scale = 2)
+    private BigDecimal balance;
 
     @Enumerated(EnumType.STRING)
     private AccountType accountType;

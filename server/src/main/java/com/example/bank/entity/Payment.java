@@ -25,7 +25,7 @@ public class Payment {
     private String id;                      // UUID for tracking status
 
     @Column(nullable = false)
-    private PaymentStatus status;                  // "Completed", "Queued" or "Failed"
+    private PaymentStatus status;           // "Completed", "Queued" or "Failed"
     private String failureReason;
 
     @Column(nullable = false)

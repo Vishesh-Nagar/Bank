@@ -13,4 +13,6 @@ public interface PaymentService {
     PaymentStatusDto getStatus(String paymentId);
 
     List<PaymentStatusDto> getPaymentHistory(Long accountId);
+
+    void markPaymentFailed(String paymentId, String reason);
 }

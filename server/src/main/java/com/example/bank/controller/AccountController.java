@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.*;
 import java.security.Principal;
 import java.util.List;
 import java.util.Map;
+import java.math.BigDecimal;
 
 @RestController
 @RequestMapping("/api")
@@ -44,8 +45,8 @@ public class AccountController {
     // Deposit amount REST API
     @PutMapping("/accounts/{id}/deposit")
     @PreAuthorize("@accountServiceImpl.isAccountOwner(principal.name, #id)")
-    public ResponseEntity<AccountDto> deposit(@PathVariable Long id, @RequestBody Map<String, Double> request) {
-        double amount = request.get("amount");
+    public ResponseEntity<AccountDto> deposit(@PathVariable Long id, @RequestBody Map<String, BigDecimal> request) {
+        BigDecimal amount = request.get("amount");
         AccountDto accountDto = accountService.deposit(id, amount);
         return ResponseEntity.ok(accountDto);
     }
@@ -53,8 +54,8 @@ public class AccountController {
     // Withdraw amount REST API
     @PutMapping("/accounts/{id}/withdraw")
     @PreAuthorize("@accountServiceImpl.isAccountOwner(principal.name, #id)")
-    public ResponseEntity<AccountDto> withdraw(@PathVariable Long id, @RequestBody Map<String, Double> request) {
-        double amount = request.get("amount");
+    public ResponseEntity<AccountDto> withdraw(@PathVariable Long id, @RequestBody Map<String, BigDecimal> request) {
+        BigDecimal amount = request.get("amount");
         AccountDto accountDto = accountService.withdraw(id, amount);
         return ResponseEntity.ok(accountDto);
     }
