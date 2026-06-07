@@ -1,9 +1,9 @@
 package com.example.bank.service;
 
-import com.example.bank.dto.LoginDto;
-import com.example.bank.dto.LoginResponseDto;
-import com.example.bank.dto.UserCreateDto;
-import com.example.bank.dto.UserDto;
+import com.example.bank.dto.Login.LoginDto;
+import com.example.bank.dto.Login.LoginResponseDto;
+import com.example.bank.dto.User.UserCreateDto;
+import com.example.bank.dto.User.UserDto;
 
 import java.util.List;
 

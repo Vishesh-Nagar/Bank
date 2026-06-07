@@ -1,8 +1,11 @@
 package com.example.bank.controller;
 
-import com.example.bank.dto.AccountCreateDto;
-import com.example.bank.dto.AccountDto;
+import com.example.bank.dto.Account.AccountCreateDto;
+import com.example.bank.dto.Account.AccountDto;
+import com.example.bank.dto.Payment.PaymentResponseDto;
+import com.example.bank.dto.Payment.PaymentStatusDto;
 import com.example.bank.service.AccountService;
+import com.example.bank.service.PaymentService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -17,9 +20,11 @@ import java.util.Map;
 @RequestMapping("/api")
 public class AccountController {
     private final AccountService accountService;
+    private final PaymentService paymentService;
 
-    public AccountController(AccountService accountService) {
+    public AccountController(AccountService accountService, PaymentService paymentService) {
         this.accountService = accountService;
+        this.paymentService = paymentService;
     }
 
     // Add Account REST API
@@ -67,5 +72,12 @@ public class AccountController {
     public ResponseEntity<String> deleteAccount(@PathVariable Long id) {
         accountService.deleteAccount(id);
         return ResponseEntity.ok("Account deleted successfully");
+    }
+
+    // Get all payment history
+    @GetMapping("/accounts/{accountId}/payments")
+    @PreAuthorize("@accountServiceImpl.isAccountOwner(principal.name, #accountId)")
+    public ResponseEntity<List<PaymentStatusDto>> getPaymentHistory(@PathVariable Long accountId) {
+        return ResponseEntity.ok(paymentService.getPaymentHistory(accountId));
     }
 }

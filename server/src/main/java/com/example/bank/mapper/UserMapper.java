@@ -1,6 +1,6 @@
 package com.example.bank.mapper;
 
-import com.example.bank.dto.UserDto;
+import com.example.bank.dto.User.UserDto;
 import com.example.bank.entity.User;
 
 public class UserMapper {

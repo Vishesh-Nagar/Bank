@@ -1,7 +1,7 @@
 package com.example.bank.service.impl;
 
-import com.example.bank.dto.AccountCreateDto;
-import com.example.bank.dto.AccountDto;
+import com.example.bank.dto.Account.AccountCreateDto;
+import com.example.bank.dto.Account.AccountDto;
 import com.example.bank.entity.Account;
 import com.example.bank.entity.User;
 import com.example.bank.exception.AccountException;
