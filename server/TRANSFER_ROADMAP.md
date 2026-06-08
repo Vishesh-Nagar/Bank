@@ -461,6 +461,72 @@ to.setBalance(to.getBalance().add(task.getAmount()));
 
 ---
 
+### Phase 5 — Real-time WebSocket Notifications
+*Estimated effort: ~1-2 hours*
+
+To provide real-time updates to the dashboard when a payment is processed, we need to push messages to the client using STOMP over WebSockets.
+
+#### 5.1 — WebSocket Dependencies
+**File**: `pom.xml` *(MODIFY)*
+Add STOMP/WebSocket dependency:
+```xml
+<dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-websocket</artifactId>
+</dependency>
+```
+
+#### 5.2 — WebSocket Configuration
+**File**: `src/main/java/com/example/bank/config/WebSocketConfig.java` *(NEW)*
+```java
+@Configuration
+@EnableWebSocketMessageBroker
+public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
+    @Override
+    public void configureMessageBroker(MessageBrokerRegistry config) {
+        config.enableSimpleBroker("/queue", "/topic");
+        config.setApplicationDestinationPrefixes("/app");
+    }
+
+    @Override
+    public void registerStompEndpoints(StompEndpointRegistry registry) {
+        // Configure allowed origins according to your frontend URL
+        registry.addEndpoint("/ws").setAllowedOrigins("http://localhost:5173").withSockJS();
+    }
+}
+```
+
+#### 5.3 — Notification Payload
+**File**: `src/main/java/com/example/bank/dto/NotificationDto.java` *(NEW)*
+```java
+@Data @AllArgsConstructor
+public class NotificationDto {
+    private String type; // e.g., "PAYMENT_COMPLETED", "PAYMENT_FAILED", "PAYMENT_RECEIVED"
+    private String message;
+    private PaymentStatusDto payment;
+}
+```
+
+#### 5.4 — Notification Publishing
+**File**: `src/main/java/com/example/bank/kafka/PaymentTaskListener.java` *(MODIFY)*
+Inject `SimpMessagingTemplate` and send messages to both the sender and the receiver after processing.
+
+```java
+// Inside consumePaymentTask, after saving the completed payment
+PaymentStatusDto paymentStatusDto = paymentService.getStatus(payment.getId());
+
+NotificationDto senderNotification = new NotificationDto("PAYMENT_COMPLETED", 
+    "Payment of $" + task.getAmount() + " completed.", paymentStatusDto);
+NotificationDto receiverNotification = new NotificationDto("PAYMENT_RECEIVED", 
+    "Received $" + task.getAmount() + " from Account " + task.getSourceAccountId(), paymentStatusDto);
+
+// Send to specific users using /user/{username}/queue/notifications
+messagingTemplate.convertAndSendToUser(from.getUser().getUsername(), "/queue/notifications", senderNotification);
+messagingTemplate.convertAndSendToUser(to.getUser().getUsername(), "/queue/notifications", receiverNotification);
+```
+
+---
+
 ## File Change Summary
 
 ```
@@ -591,3 +657,4 @@ Thread A: payment(3 → 7, $100)       Thread B: payment(7 → 3, $50)
 - [ ] **Phase 2** — `Payment` entity + `PaymentRepository` + `PaymentStatusDto` + history endpoint
 - [ ] **Phase 3** — `spring-kafka` dependency + `PaymentTask` + `PaymentProducerService` + `PaymentTaskListener` + `PaymentServiceImpl`
 - [ ] **Phase 4** — `BigDecimal` migration for `Account.balance`
+- [ ] **Phase 5** — `spring-boot-starter-websocket` + `WebSocketConfig` + `NotificationDto` + STOMP push in `PaymentTaskListener`

@@ -24,7 +24,7 @@ public class Account {
     @Column(name = "account_holder_name")
     private String accountHolderName;
 
-    @Column(nullable = false, precision = 10, scale = 2)
+    @Column(nullable = false, precision = 19, scale = 4)
     private BigDecimal balance;
 
     @Enumerated(EnumType.STRING)

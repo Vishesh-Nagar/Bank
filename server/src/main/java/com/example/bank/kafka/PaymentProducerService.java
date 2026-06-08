@@ -33,6 +33,6 @@ public class PaymentProducerService {
 
         // Send to Kafka
         String routingKey = String.valueOf(Math.min(task.getSourceAccountId(), task.getTargetAccountId()));
-        kafkaTemplate.send("payment-topic", routingKey, task);
+        kafkaTemplate.send("payments-topic", routingKey, task);
     }
 }
