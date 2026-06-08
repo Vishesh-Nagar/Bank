@@ -52,3 +52,48 @@ export interface LoginResponseDto {
     user: UserDto;
     token: string;
 }
+
+// Payment Status Enum
+export const PaymentStatus = {
+    PENDING: "PENDING",
+    COMPLETED: "COMPLETED",
+    FAILED: "FAILED",
+} as const;
+
+export type PaymentStatus = (typeof PaymentStatus)[keyof typeof PaymentStatus];
+
+// DTO for initiating a payment (cross-user)
+export interface PaymentRequestDto {
+    sourceAccountId: number;
+    targetAccountId: number;
+    amount: number;
+}
+
+// DTO returned immediately when a payment is queued
+export interface PaymentResponseDto {
+    paymentId: string;
+    status: string; // "QUEUED"
+    sourceAccountId: number;
+    targetAccountId: number;
+    amount: number;
+    submittedAt: string;
+}
+
+// DTO for polling payment status or listing history
+export interface PaymentStatusDto {
+    paymentId: string;
+    status: PaymentStatus;
+    failureReason: string | null;
+    sourceAccountId: number;
+    targetAccountId: number;
+    amount: number;
+    submittedAt: string;
+    completedAt: string | null;
+}
+
+// Notification pushed via WebSocket
+export interface NotificationDto {
+    type: "PAYMENT_COMPLETED" | "PAYMENT_RECEIVED" | "PAYMENT_FAILED";
+    message: string;
+    payment: PaymentStatusDto;
+}

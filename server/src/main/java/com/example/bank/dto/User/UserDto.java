@@ -1,4 +1,4 @@
-package com.example.bank.dto;
+package com.example.bank.dto.User;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

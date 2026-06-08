@@ -6,6 +6,7 @@ type Props = {
     account: AccountDto;
     onDeposit: () => void;
     onWithdraw: () => void;
+    onPay: () => void;
     onDelete: () => void | Promise<void>;
 };
 
@@ -13,6 +14,7 @@ const AccountCard: React.FC<Props> = ({
     account,
     onDeposit,
     onWithdraw,
+    onPay,
     onDelete,
 }) => {
     const [blocked, setBlocked] = useState(false);
@@ -38,6 +40,7 @@ const AccountCard: React.FC<Props> = ({
             throw err;
         }
     };
+
     return (
         <div className="account-card">
             <div className="account-header">
@@ -76,6 +79,14 @@ const AccountCard: React.FC<Props> = ({
                     title="Withdraw money"
                 >
                     💸 Withdraw
+                </button>
+                <button
+                    onClick={() => handleAction(onPay, true)}
+                    disabled={blocked}
+                    className="btn btn-pay btn-sm"
+                    title="Send payment to another user"
+                >
+                    💳 Pay
                 </button>
                 <button
                     onClick={() => handleAction(onDelete)}

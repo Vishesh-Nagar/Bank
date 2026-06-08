@@ -7,10 +7,11 @@ type Props = {
     accounts: AccountDto[];
     onDeposit: (acc: AccountDto) => void;
     onWithdraw: (acc: AccountDto) => void;
+    onPay: (acc: AccountDto) => void;
     onDelete: (id: number) => void;
 };
 
-const AccountsGrid: React.FC<Props> = ({ accounts, onDeposit, onWithdraw, onDelete }) => {
+const AccountsGrid: React.FC<Props> = ({ accounts, onDeposit, onWithdraw, onPay, onDelete }) => {
     if (accounts.length === 0) {
         return (
             <div className="accounts-grid">
@@ -30,6 +31,7 @@ const AccountsGrid: React.FC<Props> = ({ accounts, onDeposit, onWithdraw, onDele
                     account={acc}
                     onDeposit={() => onDeposit(acc)}
                     onWithdraw={() => onWithdraw(acc)}
+                    onPay={() => onPay(acc)}
                     onDelete={() => onDelete(acc.id)}
                 />
             ))}

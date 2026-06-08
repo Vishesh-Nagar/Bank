@@ -1,4 +1,4 @@
-package com.example.bank.dto;
+package com.example.bank.dto.Account;
 
 import com.example.bank.enums.AccountType;
 import jakarta.validation.constraints.Min;
@@ -8,6 +8,8 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
+
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -16,7 +18,7 @@ public class AccountCreateDto {
     private String accountHolderName;
 
     @Min(value = 0, message = "Initial balance cannot be negative")
-    private double balance;
+    private BigDecimal balance;
 
     @NotNull(message = "Account type is required")
     private AccountType accountType;

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import {
     getAllAccounts,
@@ -7,19 +7,27 @@ import {
     withdraw,
     deleteAccount,
 } from "../services/accountService";
-import type { AccountDto, AccountCreateDto } from "../types";
+import type {
+    AccountDto,
+    AccountCreateDto,
+    NotificationDto,
+} from "../types";
 import "./Dashboard.css";
 import {
     isAuthenticated,
     logout,
     getCurrentUser,
 } from "../services/userService";
+import { websocketService } from "../services/websocketService";
 import DashboardHeader from "../components/Dashboard/DashboardHeader";
 import MobileSidebar from "../components/Dashboard/MobileSidebar";
 import SummaryCards from "../components/Dashboard/SummaryCards";
 import AccountsGrid from "../components/Dashboard/AccountsGrid";
 import CreateAccountModal from "../components/Dashboard/modals/CreateAccountModal";
 import TransactionModal from "../components/Dashboard/modals/TransactionModal";
+import PaymentModal from "../components/Dashboard/modals/PaymentModal";
+import PaymentHistory from "../components/Dashboard/PaymentHistory";
+import NotificationToast from "../components/Notifications/NotificationToast";
 
 const Dashboard: React.FC = () => {
     const navigate = useNavigate();
@@ -27,12 +35,18 @@ const Dashboard: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string>("");
     const [showCreateModal, setShowCreateModal] = useState(false);
-    const [selectedAccount, setSelectedAccount] = useState<AccountDto | null>(
-        null
-    );
-    const [transactionModal, setTransactionModal] = useState<
-        "deposit" | "withdraw" | null
-    >(null);
+    const [selectedAccount, setSelectedAccount] = useState<AccountDto | null>(null);
+    const [transactionModal, setTransactionModal] = useState<"deposit" | "withdraw" | null>(null);
+
+    // Payment state
+    const [paymentAccount, setPaymentAccount] = useState<AccountDto | null>(null);
+    const [showPaymentModal, setShowPaymentModal] = useState(false);
+    const [historyAccount, setHistoryAccount] = useState<AccountDto | null>(null);
+    const [showHistory, setShowHistory] = useState(false);
+
+    // Notification state
+    const [notifications, setNotifications] = useState<NotificationDto[]>([]);
+
     const currentUser = getCurrentUser();
     const [newAccount, setNewAccount] = useState<AccountCreateDto>({
         accountHolderName: currentUser?.username || "",
@@ -41,6 +55,37 @@ const Dashboard: React.FC = () => {
     });
     const [transactionAmount, setTransactionAmount] = useState<string>("");
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
+    // Keep a stable ref so websocketService callback never stales
+    const addNotification = useCallback((notification: NotificationDto) => {
+        setNotifications((prev) => [...prev, notification]);
+        // Refresh balances when a payment completes so cards are up-to-date
+        if (
+            notification.type === "PAYMENT_COMPLETED" ||
+            notification.type === "PAYMENT_RECEIVED"
+        ) {
+            fetchAccounts();
+        }
+    }, []);
+
+    // Mount: connect WebSocket
+    useEffect(() => {
+        const userData = localStorage.getItem("user");
+        if (!userData) return;
+        try {
+            const parsed = JSON.parse(userData);
+            const token = parsed.token;
+            if (token) {
+                websocketService.connect(token, addNotification);
+            }
+        } catch {
+            console.error("Could not parse user token for WebSocket.");
+        }
+        return () => {
+            websocketService.disconnect();
+        };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     useEffect(() => {
         fetchAccounts();
@@ -150,9 +195,28 @@ const Dashboard: React.FC = () => {
     };
 
     const handleLogout = () => {
+        websocketService.disconnect();
         localStorage.removeItem("user");
         sessionStorage.clear();
         navigate("/");
+    };
+
+    const handleDismissNotification = (index: number) => {
+        setNotifications((prev) => prev.filter((_, i) => i !== index));
+    };
+
+    // Payment queued: show a banner notification via the toast system
+    const handlePaymentQueued = (message: string) => {
+        const syntheticNotif: NotificationDto = {
+            type: "PAYMENT_COMPLETED",
+            message,
+            payment: null as any, // Banner only — no payment detail needed
+        };
+        // Re-use info variant — override type for styling in a neutral way
+        setNotifications((prev) => [
+            ...prev,
+            { ...syntheticNotif, type: "PAYMENT_COMPLETED" },
+        ]);
     };
 
     if (loading) {
@@ -166,6 +230,12 @@ const Dashboard: React.FC = () => {
 
     return (
         <div className="dashboard">
+            {/* Real-time toast notifications */}
+            <NotificationToast
+                notifications={notifications}
+                onDismiss={handleDismissNotification}
+            />
+
             <DashboardHeader
                 onOpenSidebar={() => setIsSidebarOpen(true)}
                 username={currentUser?.username || ""}
@@ -218,9 +288,14 @@ const Dashboard: React.FC = () => {
                     setTransactionModal("withdraw");
                     setTransactionAmount("");
                 }}
+                onPay={(acc) => {
+                    setPaymentAccount(acc);
+                    setShowPaymentModal(true);
+                }}
                 onDelete={(id) => handleDeleteAccount(id)}
             />
 
+            {/* Create Account Modal */}
             <CreateAccountModal
                 visible={showCreateModal}
                 onClose={() => {
@@ -237,6 +312,7 @@ const Dashboard: React.FC = () => {
                 onCreate={(payload) => handleCreateAccount(payload)}
             />
 
+            {/* Deposit / Withdraw Modal */}
             <TransactionModal
                 visible={!!transactionModal && !!selectedAccount}
                 mode={transactionModal}
@@ -253,6 +329,29 @@ const Dashboard: React.FC = () => {
                 error={error}
                 setError={setError}
             />
+
+            {/* Send Payment Modal */}
+            <PaymentModal
+                visible={showPaymentModal}
+                sourceAccount={paymentAccount}
+                onClose={() => {
+                    setShowPaymentModal(false);
+                    setPaymentAccount(null);
+                }}
+                onQueued={handlePaymentQueued}
+            />
+
+            {/* Payment History Modal */}
+            {showHistory && historyAccount && (
+                <PaymentHistory
+                    account={historyAccount}
+                    currentUserId={currentUser?.id ?? 0}
+                    onClose={() => {
+                        setShowHistory(false);
+                        setHistoryAccount(null);
+                    }}
+                />
+            )}
         </div>
     );
 };

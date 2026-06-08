@@ -61,6 +61,12 @@ public class GlobalExceptionHandler {
         return buildError(new Exception(msg), req, HttpStatus.BAD_REQUEST, "VALIDATION_ERROR");
     }
 
+    // Payment Failure
+    @ExceptionHandler(PaymentException.class)
+    public ResponseEntity<ErrorDetails> handlePaymentException(PaymentException ex, WebRequest req) {
+        return buildError(ex, req, HttpStatus.UNPROCESSABLE_ENTITY, "PAYMENT_FAILED");
+    }
+
     // Fallback generic exception
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorDetails> handleGeneric(Exception ex, WebRequest req) {

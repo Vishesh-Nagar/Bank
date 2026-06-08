@@ -1,7 +1,7 @@
 package com.example.bank.service.impl;
 
-import com.example.bank.dto.AccountCreateDto;
-import com.example.bank.dto.AccountDto;
+import com.example.bank.dto.Account.AccountCreateDto;
+import com.example.bank.dto.Account.AccountDto;
 import com.example.bank.entity.Account;
 import com.example.bank.entity.User;
 import com.example.bank.exception.AccountException;
@@ -20,6 +20,7 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
+import java.math.BigDecimal;
 
 @Transactional
 @Service
@@ -52,22 +53,21 @@ public class AccountServiceImpl implements AccountService {
 
     @Transactional
     @Override
-    public AccountDto deposit(Long id, double amount) {
+    public AccountDto deposit(Long id, BigDecimal amount) {
         Account account = accountRepository.findByIdForUpdate(id);
-        account.setBalance(account.getBalance() + amount);
+        account.setBalance(account.getBalance().add(amount));
         Account saved = accountRepository.save(account);
         return AccountMapper.mapToAccountDto(saved);
     }
 
     @Transactional
     @Override
-    public AccountDto withdraw(Long id, double amount) {
+    public AccountDto withdraw(Long id, BigDecimal amount) {
         Account account = accountRepository.findByIdForUpdate(id);
-        double bal = account.getBalance();
-        if (bal < amount) {
+        if (account.getBalance().compareTo(amount) < 0) {
             throw new RuntimeException("Insufficient balance");
         }
-        account.setBalance(bal - amount);
+        account.setBalance(account.getBalance().subtract(amount));
         Account saved = accountRepository.save(account);
         return AccountMapper.mapToAccountDto(saved);
     }
@@ -100,7 +100,7 @@ public class AccountServiceImpl implements AccountService {
     @Transactional
     @Override
     @PreAuthorize("@accountServiceImpl.isAccountOwner(principal.name, #fromId)")
-    public void transfer(Long fromId, Long toId, double amount) {
+    public void transfer(Long fromId, Long toId, BigDecimal amount) {
         if (fromId.equals(toId)) {
             throw new RuntimeException("Cannot transfer to the same account");
         }
@@ -114,12 +114,12 @@ public class AccountServiceImpl implements AccountService {
         Account from = fromId.equals(a1.getId()) ? a1 : a2;
         Account to = from.equals(a1) ? a2 : a1;
 
-        if (from.getBalance() < amount) {
+        if (from.getBalance().compareTo(amount) < 0) {
             throw new RuntimeException("Insufficient balance");
         }
 
-        from.setBalance(from.getBalance() - amount);
-        to.setBalance(to.getBalance() + amount);
+        from.setBalance(from.getBalance().subtract(amount));
+        to.setBalance(to.getBalance().add(amount));
 
         accountRepository.save(from);
         accountRepository.save(to);
