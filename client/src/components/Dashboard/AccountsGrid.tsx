@@ -1,22 +1,20 @@
 import React from "react";
 import type { AccountDto } from "../../types";
 import AccountCard from "./AccountCard";
-import "./AccountsGrid.css";
 
 type Props = {
     accounts: AccountDto[];
-    onDeposit: (acc: AccountDto) => void;
-    onWithdraw: (acc: AccountDto) => void;
+    refreshing?: boolean;
     onPay: (acc: AccountDto) => void;
     onDelete: (id: number) => void;
 };
 
-const AccountsGrid: React.FC<Props> = ({ accounts, onDeposit, onWithdraw, onPay, onDelete }) => {
+const AccountsGrid: React.FC<Props> = ({ accounts, refreshing = false, onPay, onDelete }) => {
     if (accounts.length === 0) {
         return (
-            <div className="accounts-grid">
-                <div className="no-accounts">
-                    <p>No accounts found.</p>
+            <div className="grid accounts-grid gap-6 mb-8">
+                <div className="text-center text-slate-500 text-lg py-20 px-10 bg-gradient-to-br from-[#1e293b] to-[#0f172a] rounded-2xl border-2 border-dashed border-white/10">
+                    <p className="text-2xl font-semibold text-slate-400 mb-3">No accounts found.</p>
                     <p>Create your first account to get started!</p>
                 </div>
             </div>
@@ -24,13 +22,12 @@ const AccountsGrid: React.FC<Props> = ({ accounts, onDeposit, onWithdraw, onPay,
     }
 
     return (
-        <div className="accounts-grid">
+        <div className="grid accounts-grid gap-6 mb-8">
             {accounts.map((acc) => (
                 <AccountCard
                     key={acc.id}
                     account={acc}
-                    onDeposit={() => onDeposit(acc)}
-                    onWithdraw={() => onWithdraw(acc)}
+                    refreshing={refreshing}
                     onPay={() => onPay(acc)}
                     onDelete={() => onDelete(acc.id)}
                 />

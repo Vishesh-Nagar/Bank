@@ -1,11 +1,17 @@
 package com.example.bank.exception;
 
-import org.springframework.http.HttpStatus;
-import org.springframework.web.bind.annotation.ResponseStatus;
+import com.example.bank.enums.ErrorCode;
 
-@ResponseStatus(value = HttpStatus.BAD_REQUEST)
 public class UserException extends RuntimeException {
-    public UserException(String message) {
+
+    private final ErrorCode errorCode;
+
+    public UserException(ErrorCode errorCode, String message) {
         super(message);
+        this.errorCode = errorCode;
+    }
+
+    public ErrorCode getErrorCode() {
+        return errorCode;
     }
 }

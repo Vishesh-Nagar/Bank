@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const API_URL = import.meta.env.VITE_BACKEND_URL || "/api";
+const API_URL = import.meta.env.VITE_BACKEND_URL || "/api/v1";
 
 const api = axios.create({
     baseURL: API_URL,
@@ -41,17 +41,17 @@ api.interceptors.request.use(
                 const userData = JSON.parse(user);
                 // If you have a token, add it to headers
                 if (userData.token) {
-                    config.headers.Authorization = `Bearer ${userData.token}`;
+                    config.headers.set("Authorization", `Bearer ${userData.token}`);
                 } else {
                     // Add dummy auth header to prevent browser basic auth popup
-                    config.headers.Authorization = "Bearer dummy";
+                    config.headers.set("Authorization", "Bearer dummy");
                 }
             } catch (e) {
                 console.error("Error parsing user data:", e);
             }
         } else {
             // Add dummy auth header to prevent browser basic auth popup
-            config.headers.Authorization = "Bearer dummy";
+            config.headers.set("Authorization", "Bearer dummy");
         }
         return config;
     },

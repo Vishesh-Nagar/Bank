@@ -1,5 +1,6 @@
-target/
+**/target/
 .git
 .gitignore
-Dockerfile
-README.md
+.idea
+*.md
+**/.env

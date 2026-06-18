@@ -5,22 +5,16 @@ import com.example.bank.entity.User;
 
 public class UserMapper {
 
-    public static User mapToUser(UserDto userDto) {
-        User user = new User();
-        user.setId(userDto.getId());
-        user.setUsername(userDto.getUsername());
-        user.setEmail(userDto.getEmail());
-        // Note: We are not mapping the password from the DTO.
-        // Password should be handled separately, for example, when creating a new user.
-        return user;
-    }
-
     public static UserDto mapToUserDto(User user) {
         return new UserDto(
-                user.getId() != null ? user.getId() : null,
-                user.getUsername() != null ? user.getUsername() : null,
-                user.getEmail() != null ? user.getEmail() : null,
-                user.getPassword() != null ? user.getPassword() : null
+                user.getId(),
+                user.getUsername(),
+                user.getEmail(),
+                user.getRole(),
+                user.getCreatedAt()
         );
     }
+
+    // mapToUser is intentionally not provided — entities are constructed directly
+    // in the service layer to avoid accidentally mapping unintended fields (e.g. passwords).
 }

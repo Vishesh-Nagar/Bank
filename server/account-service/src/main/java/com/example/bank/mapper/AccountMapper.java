@@ -7,20 +7,21 @@ import com.example.bank.entity.Account;
 public class AccountMapper {
 
     public static AccountDto mapToAccountDto(Account account) {
-
         return new AccountDto(
-                account.getId() != null ? account.getId() : null,
-                account.getAccountHolderName() != null ? account.getAccountHolderName() : null,
+                account.getId(),
+                account.getAccountHolderName(),
                 account.getBalance(),
-                account.getAccountType() != null ? account.getAccountType() : null
+                account.getAccountType(),
+                account.getUserId(),
+                account.getCreatedAt()
         );
     }
 
-    public static Account mapToAccount(AccountCreateDto accountCreateDto) {
+    public static Account mapToAccount(AccountCreateDto dto) {
         Account account = new Account();
-        account.setAccountHolderName(accountCreateDto.getAccountHolderName());
-        account.setBalance(accountCreateDto.getBalance());
-        account.setAccountType(accountCreateDto.getAccountType());
+        account.setAccountHolderName(dto.getAccountHolderName());
+        account.setBalance(dto.getBalance());
+        account.setAccountType(dto.getAccountType());
         return account;
     }
 }

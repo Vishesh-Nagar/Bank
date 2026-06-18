@@ -4,135 +4,166 @@ import com.example.bank.dto.Login.LoginDto;
 import com.example.bank.dto.Login.LoginResponseDto;
 import com.example.bank.dto.User.UserCreateDto;
 import com.example.bank.dto.User.UserDto;
+import com.example.bank.dto.User.UserUpdateDto;
 import com.example.bank.entity.User;
+import com.example.bank.enums.ErrorCode;
 import com.example.bank.exception.UserException;
 import com.example.bank.mapper.UserMapper;
 import com.example.bank.repository.UserRepository;
 import com.example.bank.service.UserService;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
-import org.apache.commons.codec.digest.DigestUtils;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import javax.crypto.SecretKey;
 import java.util.Date;
-import java.util.List;
-import java.util.stream.Collectors;
+import java.util.HashMap;
+import java.util.Map;
 
 @Service
 public class UserServiceImpl implements UserService {
 
-    private final String jwtSecret;
-    private static final long EXPIRATION_TIME = 86400000; // 24 hours
+    private static final long EXPIRATION_MS = 86_400_000L; // 24 hours
 
     private final UserRepository userRepository;
+    private final BCryptPasswordEncoder passwordEncoder;
+    private final String jwtSecret;
 
-    private final org.springframework.security.crypto.password.PasswordEncoder passwordEncoder;
-
-    public UserServiceImpl(UserRepository userRepository, @Value("${jwt.secret}") String jwtSecret,
-                           org.springframework.security.crypto.password.PasswordEncoder passwordEncoder) {
+    public UserServiceImpl(UserRepository userRepository,
+                           BCryptPasswordEncoder passwordEncoder,
+                           @Value("${jwt.secret}") String jwtSecret) {
         this.userRepository = userRepository;
-        this.jwtSecret = jwtSecret;
         this.passwordEncoder = passwordEncoder;
+        this.jwtSecret = jwtSecret;
     }
 
     @Override
-    public UserDto createUser(UserCreateDto userCreateDto) {
-        userRepository.findByUsername(userCreateDto.getUsername()).ifPresent(_ -> {
-            throw new UserException("Username already exists");
+    public UserDto createUser(UserCreateDto dto) {
+        userRepository.findByUsername(dto.getUsername()).ifPresent(u -> {
+            throw new UserException(ErrorCode.USERNAME_ALREADY_EXISTS, "Username '" + dto.getUsername() + "' is already taken.");
         });
-
-        userRepository.findByEmail(userCreateDto.getEmail()).ifPresent(_ -> {
-            throw new UserException("Email already exists");
+        userRepository.findByEmail(dto.getEmail()).ifPresent(u -> {
+            throw new UserException(ErrorCode.EMAIL_ALREADY_EXISTS, "Email '" + dto.getEmail() + "' is already registered.");
         });
 
         User user = new User();
-        user.setUsername(userCreateDto.getUsername());
-        user.setPassword(passwordEncoder.encode(userCreateDto.getPassword()));
-        user.setEmail(userCreateDto.getEmail());
+        user.setUsername(dto.getUsername());
+        user.setEmail(dto.getEmail());
+        user.setPassword(passwordEncoder.encode(dto.getPassword()));
+        user.setRole("USER");
+        user.setPasswordVersion((short) 2);
 
-        User savedUser = userRepository.save(user);
-        return UserMapper.mapToUserDto(savedUser);
+        return UserMapper.mapToUserDto(userRepository.save(user));
     }
 
     @Override
     public UserDto getUserById(Long id) {
-        User user = userRepository.findById(id)
-                .orElseThrow(() -> new UserException("User not found"));
-        return UserMapper.mapToUserDto(user);
+        return UserMapper.mapToUserDto(findOrThrow(id));
     }
 
     @Override
     public UserDto getUserByUsername(String username) {
         User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new UserException("User not found with username: " + username));
+                .orElseThrow(() -> new UserException(ErrorCode.USER_NOT_FOUND,
+                        "User not found with username: " + username));
         return UserMapper.mapToUserDto(user);
     }
 
     @Override
-    public List<UserDto> getAllUsers() {
-        List<User> users = userRepository.findAll();
-        return users.stream().map(UserMapper::mapToUserDto).collect(Collectors.toList());
+    public Page<UserDto> getAllUsers(Pageable pageable) {
+        return userRepository.findAll(pageable).map(UserMapper::mapToUserDto);
     }
 
     @Override
-    public UserDto updateUser(Long id, UserDto userDto) {
-        User user = userRepository.findById(id)
-                .orElseThrow(() -> new UserException("User not found"));
+    public UserDto updateUser(Long id, UserUpdateDto dto, String principalName) {
+        User user = findOrThrow(id);
 
-        if (userDto.getUsername() != null && !userDto.getUsername().equals(user.getUsername())) {
-            userRepository.findByUsername(userDto.getUsername()).ifPresent(_ -> {
-                throw new UserException("Username already exists");
+        // Ownership check: principalName must match the user being updated (unless ADMIN handled at controller)
+        if (!user.getUsername().equals(principalName)) {
+            throw new UserException(ErrorCode.ACCESS_DENIED,
+                    "You do not have permission to update this user.");
+        }
+
+        if (dto.getUsername() != null && !dto.getUsername().equals(user.getUsername())) {
+            userRepository.findByUsername(dto.getUsername()).ifPresent(u -> {
+                throw new UserException(ErrorCode.USERNAME_ALREADY_EXISTS,
+                        "Username '" + dto.getUsername() + "' is already taken.");
             });
-            user.setUsername(userDto.getUsername());
+            user.setUsername(dto.getUsername());
         }
 
-        if (userDto.getEmail() != null && !userDto.getEmail().equals(user.getEmail())) {
-            userRepository.findByEmail(userDto.getEmail()).ifPresent(_ -> {
-                throw new UserException("Email already exists");
+        if (dto.getEmail() != null && !dto.getEmail().equals(user.getEmail())) {
+            userRepository.findByEmail(dto.getEmail()).ifPresent(u -> {
+                throw new UserException(ErrorCode.EMAIL_ALREADY_EXISTS,
+                        "Email '" + dto.getEmail() + "' is already registered.");
             });
-            user.setEmail(userDto.getEmail());
+            user.setEmail(dto.getEmail());
         }
 
-        // If updating password, hash it
-        if (userDto.getPassword() != null && !userDto.getPassword().isEmpty()) {
-            user.setPassword(passwordEncoder.encode(userDto.getPassword()));
+        if (dto.getNewPassword() != null && !dto.getNewPassword().isBlank()) {
+            if (dto.getCurrentPassword() == null || dto.getCurrentPassword().isBlank()) {
+                throw new UserException(ErrorCode.VALIDATION_FAILED,
+                        "currentPassword is required when setting a new password.");
+            }
+            if (!passwordEncoder.matches(dto.getCurrentPassword(), user.getPassword())) {
+                throw new UserException(ErrorCode.INVALID_CREDENTIALS,
+                        "Current password is incorrect.");
+            }
+            user.setPassword(passwordEncoder.encode(dto.getNewPassword()));
+            user.setPasswordVersion((short) 2);
         }
 
-        User updatedUser = userRepository.save(user);
-        return UserMapper.mapToUserDto(updatedUser);
+        return UserMapper.mapToUserDto(userRepository.save(user));
     }
 
     @Override
     public void deleteUser(Long id) {
-        userRepository.findById(id)
-                .orElseThrow(() -> new UserException("User not found"));
+        findOrThrow(id);
         userRepository.deleteById(id);
     }
 
     @Override
-    public LoginResponseDto login(LoginDto loginDto) {
-        User user = userRepository.findByUsername(loginDto.getUsername())
-                .orElseThrow(() -> new UserException("Invalid username or password"));
+    public LoginResponseDto login(LoginDto dto) {
+        User user = userRepository.findByUsername(dto.getUsername())
+                .orElseThrow(() -> new UserException(ErrorCode.INVALID_CREDENTIALS,
+                        "Invalid username or password."));
 
-        // Compare stored hash with incoming plain password using BCrypt
-        if (!passwordEncoder.matches(loginDto.getPassword(), user.getPassword())) {
-            throw new UserException("Invalid username or password");
+        if (!passwordEncoder.matches(dto.getPassword(), user.getPassword())) {
+            throw new UserException(ErrorCode.INVALID_CREDENTIALS, "Invalid username or password.");
         }
 
         UserDto userDto = UserMapper.mapToUserDto(user);
-        String token = generateToken(userDto);
+        String token = generateToken(user);
         return new LoginResponseDto(userDto, token);
     }
 
-    private String generateToken(UserDto user) {
-        Date now = new Date();
-        Date expiryDate = new Date(now.getTime() + EXPIRATION_TIME);
-        SecretKey secretKey = Keys.hmacShaKeyFor(jwtSecret.getBytes());
+    // --- private helpers ---
 
-        return Jwts.builder().subject(user.getUsername()).issuedAt(now).expiration(expiryDate)
-                .signWith(secretKey)
+    private User findOrThrow(Long id) {
+        return userRepository.findById(id)
+                .orElseThrow(() -> new UserException(ErrorCode.USER_NOT_FOUND,
+                        "User with id " + id + " was not found."));
+    }
+
+    private String generateToken(User user) {
+        Date now = new Date();
+        Date expiry = new Date(now.getTime() + EXPIRATION_MS);
+        SecretKey key = Keys.hmacShaKeyFor(jwtSecret.getBytes());
+
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("userId", user.getId());
+        claims.put("role", user.getRole());
+
+        return Jwts.builder()
+                .subject(user.getUsername())
+                .claims(claims)
+                .issuedAt(now)
+                .expiration(expiry)
+                .signWith(key)
                 .compact();
     }
 }

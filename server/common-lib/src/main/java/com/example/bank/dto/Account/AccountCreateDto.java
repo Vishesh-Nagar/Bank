@@ -1,6 +1,7 @@
 package com.example.bank.dto.Account;
 
 import com.example.bank.enums.AccountType;
+import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -18,6 +19,7 @@ public class AccountCreateDto {
     private String accountHolderName;
 
     @Min(value = 0, message = "Initial balance cannot be negative")
+    @Digits(integer = 15, fraction = 4, message = "Initial balance has too many digits")
     private BigDecimal balance;
 
     @NotNull(message = "Account type is required")

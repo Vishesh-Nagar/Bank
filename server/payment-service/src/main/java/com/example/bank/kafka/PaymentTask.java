@@ -1,4 +1,4 @@
-package com.example.bank.dto;
+package com.example.bank.kafka;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -8,9 +8,9 @@ import java.math.BigDecimal;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class ApplyPaymentRequest {
-    private Long sourceId;
-    private Long targetId;
+public class PaymentTask {
+    private String paymentId;
+    private Long sourceAccountId;
+    private Long targetAccountId;
     private BigDecimal amount;
-    private Long paymentId;
 }

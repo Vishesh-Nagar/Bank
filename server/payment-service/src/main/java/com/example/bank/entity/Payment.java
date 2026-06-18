@@ -1,10 +1,7 @@
 package com.example.bank.entity;
 
 import com.example.bank.enums.PaymentStatus;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -21,11 +18,15 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 public class Payment {
-    @Id
-    private String id;                      // UUID for tracking status
 
-    @Column(nullable = false)
-    private PaymentStatus status;           // "Completed", "Queued" or "Failed"
+    @Id
+    private String id;                          // UUID string
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    private PaymentStatus status;
+
+    @Column(length = 500)
     private String failureReason;
 
     @Column(nullable = false)
@@ -34,11 +35,12 @@ public class Payment {
     @Column(nullable = false)
     private Long targetAccountId;
 
-    @Column(nullable = false, precision = 10, scale = 2)
+    @Column(nullable = false, precision = 19, scale = 4)
     private BigDecimal amount;
 
     @CreationTimestamp
+    @Column(nullable = false, updatable = false)
     private LocalDateTime submittedAt;
-    private LocalDateTime completedAt;
 
+    private LocalDateTime completedAt;
 }

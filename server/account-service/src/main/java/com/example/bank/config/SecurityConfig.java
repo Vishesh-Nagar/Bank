@@ -26,7 +26,7 @@ public class SecurityConfig {
         http
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/internal/**").permitAll()
+                        .requestMatchers("/internal/**").permitAll()  // guarded by X-Internal-Auth
                         .requestMatchers("/error").permitAll()
                         .anyRequest().authenticated()
                 )

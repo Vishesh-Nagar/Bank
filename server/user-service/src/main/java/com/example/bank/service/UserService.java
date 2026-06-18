@@ -4,8 +4,9 @@ import com.example.bank.dto.Login.LoginDto;
 import com.example.bank.dto.Login.LoginResponseDto;
 import com.example.bank.dto.User.UserCreateDto;
 import com.example.bank.dto.User.UserDto;
-
-import java.util.List;
+import com.example.bank.dto.User.UserUpdateDto;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 public interface UserService {
     UserDto createUser(UserCreateDto userCreateDto);
@@ -14,9 +15,9 @@ public interface UserService {
 
     UserDto getUserByUsername(String username);
 
-    List<UserDto> getAllUsers();
+    Page<UserDto> getAllUsers(Pageable pageable);
 
-    UserDto updateUser(Long id, UserDto userDto);
+    UserDto updateUser(Long id, UserUpdateDto userUpdateDto, String principalName);
 
     void deleteUser(Long id);
 

@@ -1,38 +1,37 @@
 package com.example.bank.kafka;
 
-import com.example.bank.entity.Payment;
-import com.example.bank.enums.PaymentStatus;
-import com.example.bank.repository.PaymentRepository;
-import jakarta.transaction.Transactional;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
+/**
+ * Publishes payment tasks to "payments-topic".
+ * The Payment record must already be persisted (PENDING) before calling enqueue().
+ */
 @Service
 public class PaymentProducerService {
 
     private final KafkaTemplate<String, PaymentTask> kafkaTemplate;
-    private final PaymentRepository paymentRepository;
 
-    public PaymentProducerService(KafkaTemplate<String, PaymentTask> kafkaTemplate, PaymentRepository paymentRepository) {
+    public PaymentProducerService(KafkaTemplate<String, PaymentTask> kafkaTemplate) {
         this.kafkaTemplate = kafkaTemplate;
-        this.paymentRepository = paymentRepository;
     }
 
-    @Transactional
     public void enqueue(PaymentTask task) {
-        // Persist PENDING record
-        Payment payment = new Payment();
-
-        payment.setId(task.getPaymentId());
-        payment.setSourceAccountId(task.getSourceAccountId());
-        payment.setTargetAccountId(task.getTargetAccountId());
-        payment.setAmount(task.getAmount());
-        payment.setStatus(PaymentStatus.PENDING);
-
-        paymentRepository.save(payment);
-
-        // Send to Kafka
-        String routingKey = String.valueOf(Math.min(task.getSourceAccountId(), task.getTargetAccountId()));
-        kafkaTemplate.send("payments-topic", routingKey, task);
+        // Route by the smaller account ID to preserve ordering between the same pair
+        String routingKey = String.valueOf(
+                Math.min(task.getSourceAccountId(), task.getTargetAccountId()));
+        
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    kafkaTemplate.send("payments-topic", routingKey, task);
+                }
+            });
+        } else {
+            kafkaTemplate.send("payments-topic", routingKey, task);
+        }
     }
 }

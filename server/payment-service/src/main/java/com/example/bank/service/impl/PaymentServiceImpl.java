@@ -4,18 +4,20 @@ import com.example.bank.dto.Payment.PaymentRequestDto;
 import com.example.bank.dto.Payment.PaymentResponseDto;
 import com.example.bank.dto.Payment.PaymentStatusDto;
 import com.example.bank.entity.Payment;
+import com.example.bank.enums.ErrorCode;
+import com.example.bank.enums.PaymentStatus;
 import com.example.bank.exception.PaymentException;
 import com.example.bank.kafka.PaymentProducerService;
 import com.example.bank.kafka.PaymentTask;
 import com.example.bank.repository.PaymentRepository;
-import com.example.bank.service.AccountServiceClient;
 import com.example.bank.service.PaymentService;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -23,71 +25,73 @@ public class PaymentServiceImpl implements PaymentService {
 
     private final PaymentProducerService paymentProducerService;
     private final PaymentRepository paymentRepository;
-    private final AccountServiceClient accountServiceClient;
 
-    public PaymentServiceImpl(PaymentProducerService paymentProducerService, PaymentRepository paymentRepository, AccountServiceClient accountServiceClient) {
+    public PaymentServiceImpl(PaymentProducerService paymentProducerService,
+                               PaymentRepository paymentRepository) {
         this.paymentProducerService = paymentProducerService;
         this.paymentRepository = paymentRepository;
-        this.accountServiceClient = accountServiceClient;
     }
 
     @Override
-    @Transactional(readOnly = true)
+    @Transactional
     public PaymentResponseDto initiatePayment(PaymentRequestDto request) {
         Long sourceId = request.getSourceAccountId();
         Long targetId = request.getTargetAccountId();
 
         if (sourceId.equals(targetId)) {
-            throw new PaymentException("Cannot send a payment to the same account. Use the transfer endpoint to move funds between your own accounts.");
+            throw new PaymentException(ErrorCode.SELF_TRANSFER_NOT_ALLOWED,
+                    "Source and target accounts must be different.");
         }
 
         String paymentId = UUID.randomUUID().toString();
+
+        // Persist PENDING record before publishing to Kafka (outbox-lite pattern)
+        Payment payment = new Payment();
+        payment.setId(paymentId);
+        payment.setSourceAccountId(sourceId);
+        payment.setTargetAccountId(targetId);
+        payment.setAmount(request.getAmount());
+        payment.setStatus(PaymentStatus.PENDING);
+        paymentRepository.save(payment);
+
         PaymentTask task = new PaymentTask(paymentId, sourceId, targetId, request.getAmount());
         paymentProducerService.enqueue(task);
 
-        return new PaymentResponseDto(paymentId, "QUEUED", sourceId, targetId, request.getAmount(), LocalDateTime.now());
+        return new PaymentResponseDto(paymentId, PaymentStatus.PENDING, sourceId, targetId,
+                request.getAmount(), payment.getSubmittedAt());
     }
 
     @Override
     public PaymentStatusDto getStatus(String paymentId) {
-        Payment payment = paymentRepository.findById(paymentId).orElseThrow(() -> new PaymentException("Payment not found: " + paymentId));
-        return new PaymentStatusDto(
-                payment.getId(),
-                payment.getStatus(),
-                payment.getFailureReason(),
-                payment.getSourceAccountId(),
-                payment.getTargetAccountId(),
-                payment.getAmount(),
-                payment.getSubmittedAt(),
-                payment.getCompletedAt());
+        Payment payment = paymentRepository.findById(paymentId)
+                .orElseThrow(() -> new PaymentException(ErrorCode.PAYMENT_NOT_FOUND,
+                        "Payment not found: " + paymentId));
+        return toStatusDto(payment);
     }
 
     @Override
-    public List<PaymentStatusDto> getPaymentHistory(Long accountId) {
-        return paymentRepository.findBySourceAccountIdOrTargetAccountIdOrderBySubmittedAtDesc(accountId, accountId)
-                .stream()
-                .map(payment -> new PaymentStatusDto(
-                        payment.getId(),
-                        payment.getStatus(),
-                        payment.getFailureReason(),
-                        payment.getSourceAccountId(),
-                        payment.getTargetAccountId(),
-                        payment.getAmount(),
-                        payment.getSubmittedAt(),
-                        payment.getCompletedAt()))
-                .toList();
+    public Page<PaymentStatusDto> getPaymentHistory(Long accountId, Pageable pageable) {
+        return paymentRepository
+                .findBySourceAccountIdOrTargetAccountIdOrderBySubmittedAtDesc(accountId, accountId, pageable)
+                .map(this::toStatusDto);
     }
 
     @Override
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void markPaymentFailed(String paymentId, String reason) {
         paymentRepository.findById(paymentId).ifPresent(payment -> {
-            if (payment.getStatus() == com.example.bank.enums.PaymentStatus.PENDING) {
-                payment.setStatus(com.example.bank.enums.PaymentStatus.FAILED);
+            if (payment.getStatus() == PaymentStatus.PENDING) {
+                payment.setStatus(PaymentStatus.FAILED);
                 payment.setFailureReason(reason);
                 payment.setCompletedAt(LocalDateTime.now());
                 paymentRepository.save(payment);
             }
         });
+    }
+
+    private PaymentStatusDto toStatusDto(Payment p) {
+        return new PaymentStatusDto(p.getId(), p.getStatus(), p.getFailureReason(),
+                p.getSourceAccountId(), p.getTargetAccountId(),
+                p.getAmount(), p.getSubmittedAt(), p.getCompletedAt());
     }
 }

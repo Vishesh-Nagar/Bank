@@ -93,7 +93,45 @@ export interface PaymentStatusDto {
 
 // Notification pushed via WebSocket
 export interface NotificationDto {
-    type: "PAYMENT_COMPLETED" | "PAYMENT_RECEIVED" | "PAYMENT_FAILED";
+    type: "PAYMENT_COMPLETED" | "PAYMENT_RECEIVED" | "PAYMENT_FAILED" | "BALANCE_CHANGED" | "PAYMENT_QUEUED";
     message: string;
     payment: PaymentStatusDto;
+}
+
+// Generic API Response Wrapper
+export interface ApiResponse<T> {
+    success: boolean;
+    data: T;
+    meta: {
+        requestId: string;
+        timestamp: string;
+        pagination?: {
+            pageNumber: number;
+            pageSize: number;
+            totalElements: number;
+            totalPages: number;
+            hasNext: boolean;
+            hasPrevious: boolean;
+        };
+    };
+    error?: {
+        code: string;
+        message: string;
+        details?: Record<string, string>;
+    };
+}
+
+// Generic Spring Page Wrapper
+export interface Page<T> {
+    content: T[];
+    pageable: any;
+    totalElements: number;
+    totalPages: number;
+    last: boolean;
+    size: number;
+    number: number;
+    sort: any;
+    numberOfElements: number;
+    first: boolean;
+    empty: boolean;
 }

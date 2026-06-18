@@ -3,8 +3,6 @@ import { useNavigate } from "react-router-dom";
 import {
     getAllAccounts,
     createAccount,
-    deposit,
-    withdraw,
     deleteAccount,
 } from "../services/accountService";
 import type {
@@ -12,7 +10,6 @@ import type {
     AccountCreateDto,
     NotificationDto,
 } from "../types";
-import "./Dashboard.css";
 import {
     isAuthenticated,
     logout,
@@ -24,7 +21,6 @@ import MobileSidebar from "../components/Dashboard/MobileSidebar";
 import SummaryCards from "../components/Dashboard/SummaryCards";
 import AccountsGrid from "../components/Dashboard/AccountsGrid";
 import CreateAccountModal from "../components/Dashboard/modals/CreateAccountModal";
-import TransactionModal from "../components/Dashboard/modals/TransactionModal";
 import PaymentModal from "../components/Dashboard/modals/PaymentModal";
 import PaymentHistory from "../components/Dashboard/PaymentHistory";
 import NotificationToast from "../components/Notifications/NotificationToast";
@@ -33,10 +29,9 @@ const Dashboard: React.FC = () => {
     const navigate = useNavigate();
     const [accounts, setAccounts] = useState<AccountDto[]>([]);
     const [loading, setLoading] = useState(true);
+    const [refreshing, setRefreshing] = useState(false);
     const [error, setError] = useState<string>("");
     const [showCreateModal, setShowCreateModal] = useState(false);
-    const [selectedAccount, setSelectedAccount] = useState<AccountDto | null>(null);
-    const [transactionModal, setTransactionModal] = useState<"deposit" | "withdraw" | null>(null);
 
     // Payment state
     const [paymentAccount, setPaymentAccount] = useState<AccountDto | null>(null);
@@ -53,20 +48,56 @@ const Dashboard: React.FC = () => {
         balance: 0,
         accountType: "SAVINGS",
     });
-    const [transactionAmount, setTransactionAmount] = useState<string>("");
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
-    // Keep a stable ref so websocketService callback never stales
-    const addNotification = useCallback((notification: NotificationDto) => {
-        setNotifications((prev) => [...prev, notification]);
-        // Refresh balances when a payment completes so cards are up-to-date
-        if (
-            notification.type === "PAYMENT_COMPLETED" ||
-            notification.type === "PAYMENT_RECEIVED"
-        ) {
-            fetchAccounts();
-        }
-    }, []);
+    /**
+     * Stable ref that tracks whether a balance-refresh is already scheduled.
+     * Avoids hammering fetchAccounts when multiple notifications arrive closely.
+     */
+    const refreshScheduled = React.useRef(false);
+
+    /**
+     * Central notification handler — the ONLY place that writes to `notifications`
+     * state (except dismiss). Called for both server WebSocket events AND the
+     * synthetic PAYMENT_QUEUED optimistic toast.
+     *
+     * Deduplication is already handled at the service layer (websocketService._dispatch).
+     * Here we only filter out BALANCE_CHANGED events caused by payments (they are
+     * redundant with PAYMENT_COMPLETED / PAYMENT_RECEIVED toasts).
+     */
+    const addNotification = useCallback(
+        (notification: NotificationDto) => {
+            // Filter: hide payment-triggered balance changes — they are noisy
+            // and already covered by the PAYMENT_COMPLETED / PAYMENT_RECEIVED toast.
+            if (
+                notification.type === "BALANCE_CHANGED" &&
+                notification.message.toUpperCase().includes("PAYMENT")
+            ) {
+                // Still trigger a silent background refresh, but show no toast.
+                fetchAccounts(true);
+                return;
+            }
+
+            setNotifications((prev) => [...prev, notification]);
+
+            // Trigger a single debounced background refresh for money-movement events.
+            if (
+                ["PAYMENT_COMPLETED", "PAYMENT_RECEIVED", "BALANCE_CHANGED"].includes(
+                    notification.type
+                ) &&
+                !refreshScheduled.current
+            ) {
+                refreshScheduled.current = true;
+                setTimeout(() => {
+                    fetchAccounts(true);
+                    refreshScheduled.current = false;
+                }, 500);
+            }
+        },
+        // fetchAccounts is stable (defined below with no deps that change)
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+        []
+    );
 
     // Mount: connect WebSocket
     useEffect(() => {
@@ -91,22 +122,30 @@ const Dashboard: React.FC = () => {
         fetchAccounts();
     }, []);
 
-    const fetchAccounts = async () => {
+    const fetchAccounts = async (isBackgroundRefresh = false) => {
         if (!isAuthenticated()) {
             navigate("/login");
             return;
         }
-        try {
+        // On the initial load (accounts array is empty) show the full-page spinner.
+        // On every subsequent background refresh (triggered by notifications),
+        // only set `refreshing` so the page layout stays intact.
+        if (isBackgroundRefresh) {
+            setRefreshing(true);
+        } else {
             setLoading(true);
-            setError("");
+        }
+        setError("");
+        try {
             const data = await getAllAccounts();
             const cur = getCurrentUser();
             if (Array.isArray(data)) {
-                setAccounts(
-                    data.filter(
-                        (acc) => acc.accountHolderName === cur?.username
-                    )
+                const userAccounts = data.filter(
+                    (acc) => acc.accountHolderName === cur?.username
                 );
+                setAccounts(userAccounts);
+                // Subscribe to each account's WebSocket topic
+                userAccounts.forEach((acc) => websocketService.subscribeToAccount(acc.id));
             } else {
                 setAccounts([]);
                 setError("Received invalid data format from server");
@@ -117,10 +156,14 @@ const Dashboard: React.FC = () => {
                 navigate("/login");
             } else {
                 setError(err.response?.data?.message || "Failed to fetch accounts");
-                setAccounts([]);
+                if (!isBackgroundRefresh) setAccounts([]);
             }
         } finally {
-            setLoading(false);
+            if (isBackgroundRefresh) {
+                setRefreshing(false);
+            } else {
+                setLoading(false);
+            }
         }
     };
 
@@ -140,48 +183,6 @@ const Dashboard: React.FC = () => {
         }
     };
 
-    const handleDeposit = async () => {
-        if (!selectedAccount || !transactionAmount) return;
-        const amount = parseFloat(transactionAmount);
-        if (isNaN(amount) || amount <= 0) {
-            setError("Please enter a valid amount");
-            return;
-        }
-        try {
-            setError("");
-            await deposit(selectedAccount.id, amount);
-            setTransactionModal(null);
-            setSelectedAccount(null);
-            setTransactionAmount("");
-            await fetchAccounts();
-        } catch (err: any) {
-            setError(err.response?.data?.message || "Failed to deposit");
-        }
-    };
-
-    const handleWithdraw = async () => {
-        if (!selectedAccount || !transactionAmount) return;
-        const amount = parseFloat(transactionAmount);
-        if (isNaN(amount) || amount <= 0) {
-            setError("Please enter a valid amount");
-            return;
-        }
-        try {
-            setError("");
-            await withdraw(selectedAccount.id, amount);
-            setTransactionModal(null);
-            setSelectedAccount(null);
-            setTransactionAmount("");
-            await fetchAccounts();
-        } catch (err: any) {
-            setError(
-                err.response?.data?.message ||
-                    err.response?.data ||
-                    "Failed to withdraw"
-            );
-        }
-    };
-
     const handleDeleteAccount = async (id: number) => {
         if (!window.confirm("Are you sure you want to delete this account?"))
             return;
@@ -195,7 +196,7 @@ const Dashboard: React.FC = () => {
     };
 
     const handleLogout = () => {
-        websocketService.disconnect();
+        websocketService.forceDisconnect();
         localStorage.removeItem("user");
         sessionStorage.clear();
         navigate("/");
@@ -205,31 +206,30 @@ const Dashboard: React.FC = () => {
         setNotifications((prev) => prev.filter((_, i) => i !== index));
     };
 
-    // Payment queued: show a banner notification via the toast system
-    const handlePaymentQueued = (message: string) => {
-        const syntheticNotif: NotificationDto = {
-            type: "PAYMENT_COMPLETED",
-            message,
-            payment: null as any, // Banner only — no payment detail needed
-        };
-        // Re-use info variant — override type for styling in a neutral way
-        setNotifications((prev) => [
-            ...prev,
-            { ...syntheticNotif, type: "PAYMENT_COMPLETED" },
-        ]);
-    };
+    // Payment queued: funnel through addNotification so it uses the SAME code path
+    // as server-pushed events. This guarantees correct ordering.
+    const handlePaymentQueued = useCallback(
+        (message: string) => {
+            addNotification({
+                type: "PAYMENT_QUEUED",
+                message,
+                payment: null as any,
+            });
+        },
+        [addNotification]
+    );
 
     if (loading) {
         return (
-            <div className="loading-container">
-                <div className="spinner"></div>
-                <p>Loading accounts...</p>
+            <div className="h-screen flex flex-col justify-center items-center gap-2.5 text-4xl">
+                <div className="w-12 h-12 border-4 border-blue-500/15 border-t-blue-500 rounded-full animate-spin" />
+                <p className="text-base text-slate-400">Loading accounts...</p>
             </div>
         );
     }
 
     return (
-        <div className="dashboard">
+        <div className="px-6 py-6 max-w-[1400px] mx-auto min-h-screen bg-[#0a0a0a] text-white">
             {/* Real-time toast notifications */}
             <NotificationToast
                 notifications={notifications}
@@ -253,41 +253,37 @@ const Dashboard: React.FC = () => {
                 />
             )}
 
+            {/* Error banner */}
             {error && (
-                <div className="error-message">
+                <div className="bg-red-500/10 border border-red-500/30 text-red-300 px-5 py-4 rounded-xl mb-6 flex justify-between items-center animate-error-slide">
                     <span>⚠️ {error}</span>
-                    <button onClick={() => setError("")} className="close-btn">
+                    <button
+                        onClick={() => setError("")}
+                        className="bg-transparent border-none text-red-300 text-2xl cursor-pointer w-7 h-7 flex items-center justify-center rounded-md hover:bg-red-500/20"
+                    >
                         &times;
                     </button>
                 </div>
             )}
 
-            <div className="dashboard-actions">
+            {/* Action buttons */}
+            <div className="flex gap-3 mb-8">
                 <button
                     onClick={() => setShowCreateModal(true)}
                     className="btn btn-primary"
                 >
                     + Create New Account
                 </button>
-                <button onClick={fetchAccounts} className="btn btn-secondary">
-                    🔄 Refresh
+                <button onClick={() => fetchAccounts()} className="btn btn-secondary">
+                    ↺ Refresh
                 </button>
             </div>
 
-            <SummaryCards accounts={accounts} />
+            <SummaryCards accounts={accounts} refreshing={refreshing} />
 
             <AccountsGrid
                 accounts={accounts}
-                onDeposit={(acc) => {
-                    setSelectedAccount(acc);
-                    setTransactionModal("deposit");
-                    setTransactionAmount("");
-                }}
-                onWithdraw={(acc) => {
-                    setSelectedAccount(acc);
-                    setTransactionModal("withdraw");
-                    setTransactionAmount("");
-                }}
+                refreshing={refreshing}
                 onPay={(acc) => {
                     setPaymentAccount(acc);
                     setShowPaymentModal(true);
@@ -310,24 +306,6 @@ const Dashboard: React.FC = () => {
                 newAccount={newAccount}
                 setNewAccount={setNewAccount}
                 onCreate={(payload) => handleCreateAccount(payload)}
-            />
-
-            {/* Deposit / Withdraw Modal */}
-            <TransactionModal
-                visible={!!transactionModal && !!selectedAccount}
-                mode={transactionModal}
-                account={selectedAccount}
-                amount={transactionAmount}
-                setAmount={setTransactionAmount}
-                onCancel={() => {
-                    setTransactionModal(null);
-                    setTransactionAmount("");
-                    setError("");
-                    setSelectedAccount(null);
-                }}
-                onConfirm={transactionModal === "deposit" ? handleDeposit : handleWithdraw}
-                error={error}
-                setError={setError}
             />
 
             {/* Send Payment Modal */}
