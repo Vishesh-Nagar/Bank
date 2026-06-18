@@ -1,0 +1,21 @@
+spring:
+  cloud:
+    compatibility-verifier:
+      enabled: false
+  application:
+    name: account-service
+  datasource:
+    url: jdbc:mysql://localhost:3306/bank_accounts
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:password}
+  jpa:
+    hibernate:
+      ddl-auto: update
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP:localhost:9092}
+
+server:
+  port: 8082
+
+user-service:
+  url: http://localhost:8081

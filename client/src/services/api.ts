@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const API_URL = import.meta.env.VITE_BACKEND_URL;
+const API_URL = import.meta.env.VITE_BACKEND_URL || "/api";
 
 const api = axios.create({
     baseURL: API_URL,
@@ -15,14 +15,17 @@ api.interceptors.response.use(
     (response) => response,
     (error) => {
         if (error.response?.status === 401 || error.response?.status === 403) {
-            console.log("Authentication error - redirecting to login");
-            // Clear any stored user data
-            localStorage.removeItem("user");
-            sessionStorage.clear();
-            // Redirect to login
-            window.location.href = "/login";
+            const currentPath = window.location.pathname;
+            if (currentPath !== "/login" && currentPath !== "/register") {
+                console.log("Authentication error - redirecting to login");
+                // Clear any stored user data
+                localStorage.removeItem("user");
+                sessionStorage.clear();
+                // Redirect to login
+                window.location.href = "/login";
+            }
             return Promise.reject({
-                response: { status: 401, data: "Not authenticated" },
+                response: { status: 401, data: error.response?.data || "Not authenticated" },
             });
         }
         return Promise.reject(error);

@@ -1,5 +1,4 @@
 import api from "./api";
-import { sha256 } from "js-sha256";
 import type {
     UserCreateDto,
     UserDto,
@@ -7,22 +6,17 @@ import type {
     LoginResponseDto,
 } from "../types";
 
-// Register new user: hash password using SHA-256 before sending
+// Register new user: send plain password (backend will hash with BCrypt)
 export const register = async (user: UserCreateDto): Promise<UserDto> => {
-    const hashedUser = { ...user, password: sha256(user.password) };
-    const response = await api.post("/users", hashedUser);
+    const response = await api.post("/users", user);
     return response.data;
 };
 
-// Login user: hash password using SHA-256 before sending
+// Login user: send plain password (backend will verify with BCrypt)
 export const login = async (
     credentials: LoginDto
 ): Promise<LoginResponseDto> => {
-    const hashedCredentials = {
-        ...credentials,
-        password: sha256(credentials.password),
-    };
-    const response = await api.post("/users/login", hashedCredentials);
+    const response = await api.post("/users/login", credentials);
     localStorage.setItem("user", JSON.stringify(response.data));
     return response.data;
 };

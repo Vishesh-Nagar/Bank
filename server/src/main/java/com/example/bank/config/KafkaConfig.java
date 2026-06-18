@@ -1,4 +1,0 @@
-package com.example.bank.config;
-
-public class KafkaConfig {
-}

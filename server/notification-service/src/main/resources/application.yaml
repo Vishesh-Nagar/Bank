@@ -1,0 +1,14 @@
+spring:
+  cloud:
+    compatibility-verifier:
+      enabled: false
+  application:
+    name: notification-service
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP:localhost:9092}
+
+server:
+  port: 8084
+
+account-service:
+  url: http://localhost:8082

@@ -1,0 +1,25 @@
+spring:
+  cloud:
+    compatibility-verifier:
+      enabled: false
+  application:
+    name: payment-service
+  datasource:
+    url: jdbc:mysql://localhost:3306/bank_payments
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:password}
+  jpa:
+    hibernate:
+      ddl-auto: update
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP:localhost:9092}
+
+server:
+  port: 8083
+
+account-service:
+  url: http://localhost:8082
+
+logging:
+  level:
+    org.apache.kafka: ERROR
