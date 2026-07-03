@@ -22,55 +22,55 @@ spring:
             - Path=/api/v1/users/login
             - Method=POST
           filters:
-            - name: RequestRateLimiter
+            - name: CustomRateLimiter
               args:
-                redis-rate-limiter.replenishRate: 5
-                redis-rate-limiter.burstCapacity: 10
-                key-resolver: "#{@ipKeyResolver}"
+                windowSizeInSeconds: 60
+                maxRequests: 10
+                keyResolverBeanName: ipKeyResolver
 
         - id: user-general
           uri: http://bank-user-service:8081
           predicates:
             - Path=/api/v1/users/**
           filters:
-            - name: RequestRateLimiter
+            - name: CustomRateLimiter
               args:
-                redis-rate-limiter.replenishRate: 60
-                redis-rate-limiter.burstCapacity: 60
-                key-resolver: "#{@ipKeyResolver}"
+                windowSizeInSeconds: 60
+                maxRequests: 60
+                keyResolverBeanName: ipKeyResolver
 
         - id: user-admin
           uri: http://bank-user-service:8081
           predicates:
             - Path=/api/v1/admin/**, /api/v1/audit/**
           filters:
-            - name: RequestRateLimiter
+            - name: CustomRateLimiter
               args:
-                redis-rate-limiter.replenishRate: 10
-                redis-rate-limiter.burstCapacity: 20
-                key-resolver: "#{@ipKeyResolver}"
+                windowSizeInSeconds: 60
+                maxRequests: 20
+                keyResolverBeanName: ipKeyResolver
 
         - id: account-service
           uri: http://bank-account-service:8082
           predicates:
             - Path=/api/v1/accounts/**
           filters:
-            - name: RequestRateLimiter
+            - name: CustomRateLimiter
               args:
-                redis-rate-limiter.replenishRate: 100
-                redis-rate-limiter.burstCapacity: 100
-                key-resolver: "#{@ipKeyResolver}"
+                windowSizeInSeconds: 60
+                maxRequests: 100
+                keyResolverBeanName: ipKeyResolver
 
         - id: payment-service
           uri: http://bank-payment-service:8083
           predicates:
             - Path=/api/v1/payments/**
           filters:
-            - name: RequestRateLimiter
+            - name: CustomRateLimiter
               args:
-                redis-rate-limiter.replenishRate: 10
-                redis-rate-limiter.burstCapacity: 20
-                key-resolver: "#{@userKeyResolver}"
+                windowSizeInSeconds: 60
+                maxRequests: 20
+                keyResolverBeanName: userKeyResolver
 
         - id: notification-ws
           uri: http://bank-notification-service:8084
@@ -97,11 +97,19 @@ management:
   endpoints:
     web:
       exposure:
-        include: health
+        include: health,prometheus
   endpoint:
     health:
       show-details: never
+  tracing:
+    sampling:
+      probability: 1.0
+  zipkin:
+    tracing:
+      endpoint: "http://${ZIPKIN_HOST:bank-zipkin}:9411/api/v2/spans"
 
 logging:
   file:
     name: ${LOG_PATH:./logs}/${spring.application.name}.log
+  pattern:
+    level: "%5p [${spring.application.name:},%X{traceId:-},%X{spanId:-}]"
