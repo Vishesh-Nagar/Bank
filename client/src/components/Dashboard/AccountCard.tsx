@@ -5,14 +5,18 @@ type Props = {
     account: AccountDto;
     refreshing?: boolean;
     onPay: () => void;
+    onSchedule: () => void;
     onDelete: () => void | Promise<void>;
+    onHistory: () => void;
 };
 
 const AccountCard: React.FC<Props> = ({
     account,
     refreshing = false,
     onPay,
+    onSchedule,
     onDelete,
+    onHistory,
 }) => {
     const [blocked, setBlocked] = useState(false);
 
@@ -84,6 +88,22 @@ const AccountCard: React.FC<Props> = ({
                     title="Send payment to another user"
                 >
                     💳 Pay
+                </button>
+                <button
+                    onClick={() => handleAction(onSchedule, true)}
+                    disabled={blocked}
+                    className="btn btn-secondary btn-sm"
+                    title="Schedule recurring payments"
+                >
+                    ⏱️ Schedule
+                </button>
+                <button
+                    onClick={() => handleAction(onHistory, true)}
+                    disabled={blocked}
+                    className="btn btn-secondary btn-sm"
+                    title="View payment history"
+                >
+                    📜 History
                 </button>
                 <button
                     onClick={() => handleAction(onDelete)}

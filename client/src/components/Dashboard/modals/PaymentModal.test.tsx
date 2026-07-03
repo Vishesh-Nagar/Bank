@@ -1,9 +1,9 @@
-import React from "react";
+
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import PaymentModal from "./PaymentModal";
 import * as paymentService from "../../../services/paymentService";
-import { AccountDto } from "../../../types";
+import type { AccountDto } from "../../../types";
 
 vi.mock("../../../services/paymentService");
 
@@ -13,7 +13,6 @@ describe("PaymentModal", () => {
         accountHolderName: "Test User",
         accountType: "SAVINGS",
         balance: 1000,
-        transactions: [],
     };
 
     const mockOnClose = vi.fn();

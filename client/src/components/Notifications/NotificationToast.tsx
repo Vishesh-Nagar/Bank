@@ -37,7 +37,7 @@ const NotificationToast: React.FC<Props> = ({ notifications, onDismiss }) => {
     const [toasts, setToasts] = useState<Toast[]>([]);
     const counterRef = useRef(0);
     // Tracks how many items from `notifications` we have already rendered.
-    const lastLengthRef = useRef(0);
+    const lastLengthRef = useRef(notifications.length);
 
     useEffect(() => {
         const prevLength = lastLengthRef.current;
@@ -50,7 +50,7 @@ const NotificationToast: React.FC<Props> = ({ notifications, onDismiss }) => {
         }
 
         // Slice out the genuinely new notifications
-        const newItems = notifications.slice(prevLength, currentLength);
+        const newItems = notifications.slice(prevLength, currentLength).filter(n => n.type !== "BALANCE_CHANGED");
         lastLengthRef.current = currentLength;
 
         const timers: ReturnType<typeof setTimeout>[] = [];

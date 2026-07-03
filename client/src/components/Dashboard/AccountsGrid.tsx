@@ -6,10 +6,12 @@ type Props = {
     accounts: AccountDto[];
     refreshing?: boolean;
     onPay: (acc: AccountDto) => void;
+    onSchedule: (acc: AccountDto) => void;
     onDelete: (id: number) => void;
+    onHistory: (acc: AccountDto) => void;
 };
 
-const AccountsGrid: React.FC<Props> = ({ accounts, refreshing = false, onPay, onDelete }) => {
+const AccountsGrid: React.FC<Props> = ({ accounts, refreshing = false, onPay, onSchedule, onDelete, onHistory }) => {
     if (accounts.length === 0) {
         return (
             <div className="grid accounts-grid gap-6 mb-8">
@@ -29,7 +31,9 @@ const AccountsGrid: React.FC<Props> = ({ accounts, refreshing = false, onPay, on
                     account={acc}
                     refreshing={refreshing}
                     onPay={() => onPay(acc)}
+                    onSchedule={() => onSchedule(acc)}
                     onDelete={() => onDelete(acc.id)}
+                    onHistory={() => onHistory(acc)}
                 />
             ))}
         </div>

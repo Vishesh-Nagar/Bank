@@ -5,28 +5,50 @@ import type {
     PaymentStatusDto,
     ApiResponse,
     Page,
+    ScheduledPaymentDto,
 } from "../types";
 
-// Initiate a cross-user payment — returns 202 Accepted with PENDING status
+// Initiate a payment
 export const initiatePayment = async (
-    request: PaymentRequestDto
+    paymentRequest: PaymentRequestDto
 ): Promise<PaymentResponseDto> => {
-    const response = await api.post<ApiResponse<PaymentResponseDto>>("/payments", request);
+    const response = await api.post<ApiResponse<PaymentResponseDto>>("/payments", paymentRequest);
     return response.data.data;
 };
 
-// Poll the status of a specific payment by ID
-export const getPaymentStatus = async (
-    paymentId: string
-): Promise<PaymentStatusDto> => {
+// Polling status
+export const getPaymentStatus = async (paymentId: string): Promise<PaymentStatusDto> => {
     const response = await api.get<ApiResponse<PaymentStatusDto>>(`/payments/${paymentId}`);
     return response.data.data;
 };
 
-// Get all payments where the given account was sender or receiver
-export const getPaymentHistory = async (
-    accountId: number
-): Promise<PaymentStatusDto[]> => {
-    const response = await api.get<ApiResponse<Page<PaymentStatusDto>>>(`/payments?accountId=${accountId}`);
+// Payment history
+export const getPaymentHistory = async (accountId: number, page: number = 0, size: number = 20): Promise<PaymentStatusDto[]> => {
+    const response = await api.get<ApiResponse<Page<PaymentStatusDto>>>("/payments", {
+        params: { accountId, page, size }
+    });
     return response.data.data.content;
+};
+
+// Dispute / Cancel payment
+export const disputePayment = async (paymentId: string): Promise<PaymentStatusDto> => {
+    const response = await api.post<ApiResponse<PaymentStatusDto>>(`/payments/${paymentId}/dispute`);
+    return response.data.data;
+};
+
+// Scheduled Payments
+export const createScheduledPayment = async (payment: ScheduledPaymentDto): Promise<ScheduledPaymentDto> => {
+    const response = await api.post<ApiResponse<ScheduledPaymentDto>>("/scheduled-payments", payment);
+    return response.data.data;
+};
+
+export const getScheduledPayments = async (accountId: number): Promise<ScheduledPaymentDto[]> => {
+    const response = await api.get<ApiResponse<ScheduledPaymentDto[]>>("/scheduled-payments", {
+        params: { accountId }
+    });
+    return response.data.data;
+};
+
+export const cancelScheduledPayment = async (id: number): Promise<void> => {
+    await api.delete(`/scheduled-payments/${id}`);
 };

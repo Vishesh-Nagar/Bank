@@ -50,14 +50,17 @@ export interface LoginDto {
 // DTO for login response (never send password in response)
 export interface LoginResponseDto {
     user: UserDto;
-    token: string;
+    accessToken: string;
+    refreshToken: string;
 }
 
 // Payment Status Enum
 export const PaymentStatus = {
     PENDING: "PENDING",
+    PROCESSING: "PROCESSING",
     COMPLETED: "COMPLETED",
     FAILED: "FAILED",
+    QUEUED: "QUEUED",
 } as const;
 
 export type PaymentStatus = (typeof PaymentStatus)[keyof typeof PaymentStatus];
@@ -134,4 +137,17 @@ export interface Page<T> {
     numberOfElements: number;
     first: boolean;
     empty: boolean;
+}
+
+export type RecurrenceType = "DAILY" | "WEEKLY" | "MONTHLY";
+
+export interface ScheduledPaymentDto {
+    id?: number;
+    sourceAccountId: number;
+    targetAccountId: number;
+    amount: number;
+    recurrenceType: RecurrenceType;
+    status?: "ACTIVE" | "CANCELLED" | "COMPLETED";
+    nextExecutionTime: string;
+    createdAt?: string;
 }

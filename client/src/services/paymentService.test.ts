@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { initiatePayment, getPaymentStatus, getPaymentHistory } from "./paymentService";
 import api from "./api";
-import { PaymentRequestDto } from "../types";
+import type { PaymentRequestDto } from "../types";
 
 vi.mock("./api");
 

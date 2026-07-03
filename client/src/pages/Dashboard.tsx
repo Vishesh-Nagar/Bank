@@ -22,14 +22,17 @@ import SummaryCards from "../components/Dashboard/SummaryCards";
 import AccountsGrid from "../components/Dashboard/AccountsGrid";
 import CreateAccountModal from "../components/Dashboard/modals/CreateAccountModal";
 import PaymentModal from "../components/Dashboard/modals/PaymentModal";
+import ScheduledPaymentModal from "../components/Dashboard/modals/ScheduledPaymentModal";
 import PaymentHistory from "../components/Dashboard/PaymentHistory";
 import NotificationToast from "../components/Notifications/NotificationToast";
+import ActivePaymentsSection from "../components/Dashboard/ActivePaymentsSection";
 
 const Dashboard: React.FC = () => {
     const navigate = useNavigate();
     const [accounts, setAccounts] = useState<AccountDto[]>([]);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
+    const [refreshTrigger, setRefreshTrigger] = useState(0);
     const [error, setError] = useState<string>("");
     const [showCreateModal, setShowCreateModal] = useState(false);
 
@@ -38,6 +41,10 @@ const Dashboard: React.FC = () => {
     const [showPaymentModal, setShowPaymentModal] = useState(false);
     const [historyAccount, setHistoryAccount] = useState<AccountDto | null>(null);
     const [showHistory, setShowHistory] = useState(false);
+    
+    // Scheduled payment state
+    const [scheduleAccount, setScheduleAccount] = useState<AccountDto | null>(null);
+    const [showScheduleModal, setShowScheduleModal] = useState(false);
 
     // Notification state
     const [notifications, setNotifications] = useState<NotificationDto[]>([]);
@@ -50,51 +57,17 @@ const Dashboard: React.FC = () => {
     });
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
-    /**
-     * Stable ref that tracks whether a balance-refresh is already scheduled.
-     * Avoids hammering fetchAccounts when multiple notifications arrive closely.
-     */
-    const refreshScheduled = React.useRef(false);
-
-    /**
-     * Central notification handler — the ONLY place that writes to `notifications`
-     * state (except dismiss). Called for both server WebSocket events AND the
-     * synthetic PAYMENT_QUEUED optimistic toast.
-     *
-     * Deduplication is already handled at the service layer (websocketService._dispatch).
-     * Here we only filter out BALANCE_CHANGED events caused by payments (they are
-     * redundant with PAYMENT_COMPLETED / PAYMENT_RECEIVED toasts).
-     */
     const addNotification = useCallback(
         (notification: NotificationDto) => {
-            // Filter: hide payment-triggered balance changes — they are noisy
-            // and already covered by the PAYMENT_COMPLETED / PAYMENT_RECEIVED toast.
-            if (
-                notification.type === "BALANCE_CHANGED" &&
-                notification.message.toUpperCase().includes("PAYMENT")
-            ) {
-                // Still trigger a silent background refresh, but show no toast.
+            if (notification.type === "BALANCE_CHANGED") {
                 fetchAccounts(true);
                 return;
             }
-
             setNotifications((prev) => [...prev, notification]);
-
-            // Trigger a single debounced background refresh for money-movement events.
-            if (
-                ["PAYMENT_COMPLETED", "PAYMENT_RECEIVED", "BALANCE_CHANGED"].includes(
-                    notification.type
-                ) &&
-                !refreshScheduled.current
-            ) {
-                refreshScheduled.current = true;
-                setTimeout(() => {
-                    fetchAccounts(true);
-                    refreshScheduled.current = false;
-                }, 500);
+            if (notification.type !== "PAYMENT_QUEUED") {
+                fetchAccounts(true);
             }
         },
-        // fetchAccounts is stable (defined below with no deps that change)
         // eslint-disable-next-line react-hooks/exhaustive-deps
         []
     );
@@ -144,6 +117,7 @@ const Dashboard: React.FC = () => {
                     (acc) => acc.accountHolderName === cur?.username
                 );
                 setAccounts(userAccounts);
+                setRefreshTrigger(prev => prev + 1);
                 // Subscribe to each account's WebSocket topic
                 userAccounts.forEach((acc) => websocketService.subscribeToAccount(acc.id));
             } else {
@@ -215,7 +189,9 @@ const Dashboard: React.FC = () => {
                 message,
                 payment: null as any,
             });
+            fetchAccounts(true);
         },
+        // eslint-disable-next-line react-hooks/exhaustive-deps
         [addNotification]
     );
 
@@ -281,6 +257,8 @@ const Dashboard: React.FC = () => {
 
             <SummaryCards accounts={accounts} refreshing={refreshing} />
 
+            <ActivePaymentsSection accounts={accounts} refreshTrigger={refreshTrigger} />
+
             <AccountsGrid
                 accounts={accounts}
                 refreshing={refreshing}
@@ -288,7 +266,15 @@ const Dashboard: React.FC = () => {
                     setPaymentAccount(acc);
                     setShowPaymentModal(true);
                 }}
+                onSchedule={(acc) => {
+                    setScheduleAccount(acc);
+                    setShowScheduleModal(true);
+                }}
                 onDelete={(id) => handleDeleteAccount(id)}
+                onHistory={(acc) => {
+                    setHistoryAccount(acc);
+                    setShowHistory(true);
+                }}
             />
 
             {/* Create Account Modal */}
@@ -317,6 +303,16 @@ const Dashboard: React.FC = () => {
                     setPaymentAccount(null);
                 }}
                 onQueued={handlePaymentQueued}
+            />
+
+            {/* Scheduled Payment Modal */}
+            <ScheduledPaymentModal
+                visible={showScheduleModal}
+                sourceAccount={scheduleAccount}
+                onClose={() => {
+                    setShowScheduleModal(false);
+                    setScheduleAccount(null);
+                }}
             />
 
             {/* Payment History Modal */}
