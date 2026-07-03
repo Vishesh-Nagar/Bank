@@ -52,7 +52,13 @@ public class PaymentController {
                     "You do not own the source account.");
         }
 
-        PaymentResponseDto response = paymentService.initiatePayment(request);
+        // Extract the idempotency key supplied by the client (optional but strongly recommended).
+        // Clients should generate a UUID per unique payment intent and include it here.
+        // On network retry, send the same key — the server returns the original response
+        // instead of creating a duplicate payment.
+        String idempotencyKey = req.getHeader("Idempotency-Key");
+
+        PaymentResponseDto response = paymentService.initiatePayment(request, idempotencyKey);
         return ResponseEntity.accepted()  // 202
                 .body(ApiResponse.success(response, req.getHeader("X-Request-Id")));
     }
@@ -87,5 +93,28 @@ public class PaymentController {
                 result.getNumber(), result.getSize(), result.getTotalElements(),
                 result.getTotalPages(), result.hasNext(), result.hasPrevious());
         return ResponseEntity.ok(ApiResponse.successPaginated(result, req.getHeader("X-Request-Id"), pagination));
+    }
+
+    // EP-PM-04: Dispute / Cancel payment
+    @PostMapping("/{paymentId}/dispute")
+    public ResponseEntity<ApiResponse<PaymentStatusDto>> disputePayment(
+            @PathVariable String paymentId,
+            Principal principal,
+            HttpServletRequest req) {
+
+        // Get payment to check ownership
+        PaymentStatusDto status = paymentService.getStatus(paymentId);
+        Boolean isOwner = accountServiceClient.isAccountOwner(
+                status.getSourceAccountId(), principal.getName(), internalSecret);
+        
+        if (Boolean.FALSE.equals(isOwner)) {
+            throw new PaymentException(ErrorCode.ACCOUNT_OWNERSHIP_REQUIRED,
+                    "You do not own the source account for this payment.");
+        }
+
+        // Dispute payment (only works if still PENDING)
+        // Since we aren't passing userId in the endpoint (it's unused in the service), we just pass null
+        PaymentStatusDto updated = paymentService.disputePayment(paymentId, null);
+        return ResponseEntity.ok(ApiResponse.success(updated, req.getHeader("X-Request-Id")));
     }
 }

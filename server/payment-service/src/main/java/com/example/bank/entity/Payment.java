@@ -12,7 +12,9 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "payments")
+@Table(name = "payments", indexes = {
+        @Index(name = "idx_payments_idempotency_key", columnList = "idempotency_key", unique = true)
+})
 @Getter
 @Setter
 @NoArgsConstructor
@@ -21,6 +23,14 @@ public class Payment {
 
     @Id
     private String id;                          // UUID string
+
+    /**
+     * Client-supplied idempotency key (UUID).
+     * Stored here as a DB-level uniqueness guard — a safety net in case the Redis
+     * cache entry expires between the check and the save.
+     */
+    @Column(name = "idempotency_key", unique = true, length = 64)
+    private String idempotencyKey;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)

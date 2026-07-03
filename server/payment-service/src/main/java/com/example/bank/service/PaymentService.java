@@ -7,11 +7,13 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
 public interface PaymentService {
-    PaymentResponseDto initiatePayment(PaymentRequestDto request);
+    PaymentResponseDto initiatePayment(PaymentRequestDto request, String idempotencyKey);
 
     PaymentStatusDto getStatus(String paymentId);
 
     Page<PaymentStatusDto> getPaymentHistory(Long accountId, Pageable pageable);
 
     void markPaymentFailed(String paymentId, String reason);
+
+    PaymentStatusDto disputePayment(String paymentId, Long userId);
 }
