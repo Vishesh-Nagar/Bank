@@ -1,53 +1,42 @@
-# Bank Application Local Setup Guide
+# Bank Application — Local Setup Guide
 
-This guide provides step-by-step instructions for getting the Bank Application running locally on your machine. The architecture consists of a React frontend and a Spring Boot microservice backend, backed by MySQL databases, Redis for rate limiting/caching, and Kafka for event-driven asynchronous messaging.
+Step-by-step guide for running the Bank Application locally. The architecture consists of a React frontend, 5 Spring Boot microservices, and Dockerized infrastructure (MySQL, Redis, Kafka).
 
 ## Prerequisites
 
-Ensure you have the following installed on your machine:
-- **Docker** (for running the infrastructure: MySQL, Redis, Kafka)
-- **Java 21 or 25** (the backend uses Java 25 based on the `pom.xml`, but Java 21+ should work)
-- **Maven 3.x**
-- **Node.js 18+ and npm** (for the frontend)
+- **Docker Desktop** (for MySQL, Redis, Kafka)
+- **Java 21+**
+- **Maven 3.x** (or use the included `mvnw` wrapper)
+- **Node.js 18+** and **npm**
 
 ---
 
-## Step 1: Infrastructure Setup using Docker
+## Step 1: Infrastructure (Docker)
 
-The backend operates as a set of microservices, requiring distinct database schemas, Redis, and Kafka.
+From the **repository root** (`Bank/`):
 
-The `docker-compose.yml` in the root of your project spins up:
-1. **MySQL** (Port 3306) with initialized schemas: `bank_users`, `bank_accounts`, `bank_payments`.
-2. **Redis** (Port 6379) for API Gateway rate-limiting and JWT blocklisting.
-3. **Kafka & Zookeeper** (Port 9092 & 2181) for event-driven messaging.
+```bash
+docker compose up -d
+```
 
-**To start the infrastructure:**
-1. Open a terminal in the root directory (`d:\Github\Bank`).
-2. Run the following command:
-   ```bash
-   docker compose up -d
-   ```
-This will download the required images, spin them up, and create the databases automatically.
+This starts:
+| Service     | Port | Purpose                                    |
+|-------------|------|--------------------------------------------|
+| MySQL 8.0   | 3306 | Databases: `bank_users`, `bank_accounts`, `bank_payments` |
+| Redis 7     | 6379 | API Gateway rate limiting, JWT blocklisting |
+| Kafka       | 9092 | Event-driven messaging (external port)      |
+| Zookeeper   | 2181 | Kafka coordination                          |
+
+Verify everything is healthy:
+```bash
+docker compose ps
+```
 
 ---
 
-## Step 2: Environment Variables & Credentials
+## Step 2: Environment Variables
 
-For enhanced security, the microservices do not contain hardcoded default credentials in their code. You **must** provide the following environment variables before running the backend.
-
-**Required Environment Variables:**
-- **DB_USERNAME**: `root` (If using the docker-compose setup)
-- **DB_PASSWORD**: `password` (If using the docker-compose setup)
-- **JWT_SECRET**: A secure random string for JWT generation/validation (e.g., `my_super_secret_jwt_key_1234567890`)
-- **INTERNAL_SERVICE_SECRET**: A secure random string for internal inter-service communication authentication (e.g., `my_internal_service_secret_key`)
-
-**Optional Environment Variables:**
-- **CORS_ALLOWED_ORIGINS**: Defines allowed frontend origins (Defaults to `http://localhost:3000,http://localhost:5173`)
-- **KAFKA_BOOTSTRAP**: Kafka address (Defaults to `localhost:9092`)
-
-**How to set them:**
-
-Create a `.env` file in the `server` directory (e.g. `d:\Github\Bank\server\.env`) and add your values there. Spring Boot has been configured to automatically pick this up.
+Create a `.env` file in the `server/` directory:
 
 ```properties
 # server/.env
@@ -57,67 +46,78 @@ JWT_SECRET=my_super_secret_jwt_key_1234567890
 INTERNAL_SERVICE_SECRET=my_internal_service_secret_key
 ```
 
-*Note: You do not need to export these manually in the terminal if you use the `.env` file approach!*
+> [!NOTE]
+> Spring Boot automatically reads this `.env` file via `spring.config.import` — no manual exporting needed.
+
+> [!IMPORTANT]
+> All services **must** share the same `JWT_SECRET` and `INTERNAL_SERVICE_SECRET` values, otherwise JWT validation and inter-service auth will fail.
 
 ---
 
-## Step 3: Running the Backend Microservices
+## Step 3: Backend Microservices
 
-Because the backend is split into multiple modules, you'll need to run them. The main services you need to start are:
-- `user-service` (Port 8081)
-- `account-service` (Port 8082)
-- `payment-service` (Port 8083)
-- `notification-service` (Port 8084)
-- `api-gateway` (Port 8080 - Routes all traffic)
-
-**Using your IDE (Recommended):**
-The easiest way to run the backend is to open the `server` folder in IntelliJ IDEA, Eclipse, or VS Code. Ensure you configure the Environment Variables in your Run Configurations, and then run the main application classes for each microservice.
-
-**Using Terminal (Maven):**
-If you prefer the command line, simply create your `.env` file in the `server` folder, open separate terminal tabs/windows for each service, navigate to the `server` directory, and run:
+Start each service in a separate terminal. **Order matters** — downstream services depend on upstream ones being healthy.
 
 ```bash
-# Terminal 1: User Service
 cd server
+
+# Terminal 1: User Service (:8081) — no service dependencies
 ./mvnw spring-boot:run -pl user-service
 
-# Terminal 2: Account Service
-cd server
+# Terminal 2: Account Service (:8082) — depends on user-service
 ./mvnw spring-boot:run -pl account-service
 
-# Terminal 3: Payment Service
-cd server
+# Terminal 3: Payment Service (:8083) — depends on account-service
 ./mvnw spring-boot:run -pl payment-service
 
-# Terminal 4: Notification Service
-cd server
+# Terminal 4: Notification Service (:8084) — depends on Kafka only
 ./mvnw spring-boot:run -pl notification-service
 
-# Terminal 5: API Gateway
-cd server
+# Terminal 5: API Gateway (:8080) — depends on all services
 ./mvnw spring-boot:run -pl api-gateway
 ```
 
+> [!TIP]
+> When running locally (not in Docker), Kafka is accessible on `localhost:9092`. The default config already handles this via the `KAFKA_BOOTSTRAP` env var defaulting to `bank-kafka:29092` for Docker. For local runs, Spring auto-configures from the `.env` file. If you hit Kafka connectivity issues, set `KAFKA_BOOTSTRAP=localhost:9092` in your `server/.env`.
+
 ---
 
-## Step 4: Running the Frontend
+## Step 4: Frontend
 
-Once your backend services are up and running, you can start the React frontend.
+```bash
+cd client
+npm install
+npm run dev
+```
 
-1. Open a new terminal and navigate to the `client` directory:
-   ```bash
-   cd client
-   ```
-2. Install the dependencies:
-   ```bash
-   npm install
-   ```
-3. Start the development server:
-   ```bash
-   npm run dev
-   ```
+The frontend starts at **http://localhost:5173** and proxies API calls to the gateway at `localhost:8080` via Vite's dev server proxy.
 
-The frontend will start and be accessible at [http://localhost:5173](http://localhost:5173). It will communicate with the backend via the API Gateway (running on `http://localhost:8080`).
+---
 
-> [!TIP]
-> If you encounter issues where the frontend fails to communicate with the backend, ensure your `api-gateway` is actively running, Kafka/Redis are reachable, and all services share the exact same `JWT_SECRET` and `INTERNAL_SERVICE_SECRET` environment variables.
+## Alternative: Full Docker Stack
+
+Instead of running services individually, start **everything** in Docker:
+
+```bash
+# From the repo root:
+docker compose --profile full up -d --build
+```
+
+This builds and starts all 5 backend services, the client (on port 3000), and all infrastructure. Use this when you don't need hot-reload on the backend.
+
+| Profile     | Command                                     | What it starts                    |
+|-------------|---------------------------------------------|-----------------------------------|
+| *(default)* | `docker compose up -d`                      | Infrastructure only               |
+| `backend`   | `docker compose --profile backend up -d`    | Infra + all 5 backend services    |
+| `full`      | `docker compose --profile full up -d`       | Everything including React client |
+
+---
+
+## Troubleshooting
+
+| Symptom | Likely Cause | Fix |
+|---------|-------------|-----|
+| Frontend can't reach backend | API Gateway not running | Ensure `api-gateway` is started last and healthy |
+| `Connection refused` on Kafka | Wrong bootstrap address | Set `KAFKA_BOOTSTRAP=localhost:9092` in `server/.env` for local runs |
+| JWT validation fails across services | Mismatched secrets | Ensure all services share the same `JWT_SECRET` |
+| MySQL connection refused | Docker not running | Run `docker compose up -d` from repo root |

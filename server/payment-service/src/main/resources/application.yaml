@@ -23,6 +23,13 @@ spring:
       value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
       properties:
         spring.json.trusted.packages: "*"
+  data:
+    redis:
+      host: ${REDIS_HOST:bank-redis}
+      port: ${REDIS_PORT:6379}
+
+payment:
+  daily-limit: ${PAYMENT_DAILY_LIMIT:5000.00}
 
 server:
   port: 8083
@@ -36,6 +43,8 @@ internal:
 logging:
   level:
     org.apache.kafka: ERROR
+  file:
+    name: ${LOG_PATH:./logs}/${spring.application.name}.log
 
 management:
   endpoints:
@@ -45,3 +54,4 @@ management:
   endpoint:
     health:
       show-details: never
+

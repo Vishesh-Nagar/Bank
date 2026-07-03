@@ -1,4 +1,21 @@
-# Environment files — never commit secrets
+# ─── Environment ──────────────────────────────────────────────────────────────
 .env
 .env.local
 .env.production
+
+# ─── IDE ──────────────────────────────────────────────────────────────────────
+.idea/
+.vscode/
+*.iws
+*.iml
+*.ipr
+
+# ─── Build artifacts ─────────────────────────────────────────────────────────
+target/
+dist/
+node_modules/
+
+# ─── Logs ─────────────────────────────────────────────────────────────────────
+logs/
+*.log
+logs.txt

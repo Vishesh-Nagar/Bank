@@ -4,15 +4,22 @@ WORKDIR /workspace
 
 COPY pom.xml ./pom.xml
 COPY mvnw ./mvnw
-COPY mvnw.cmd ./mvnw.cmd
 COPY .mvn ./.mvn
 
-COPY common-lib ./common-lib
-COPY api-gateway ./api-gateway
+# Copy ALL module POMs for Maven reactor resolution (tiny files)
+COPY common-lib/pom.xml ./common-lib/pom.xml
+COPY user-service/pom.xml ./user-service/pom.xml
+COPY account-service/pom.xml ./account-service/pom.xml
+COPY payment-service/pom.xml ./payment-service/pom.xml
+COPY notification-service/pom.xml ./notification-service/pom.xml
+COPY api-gateway/pom.xml ./api-gateway/pom.xml
+
+# Copy source only for common-lib (shared dependency) + this service
+COPY common-lib/src ./common-lib/src
+COPY api-gateway/src ./api-gateway/src
 
 RUN chmod +x mvnw
-RUN ./mvnw -B -pl common-lib install -DskipTests
-RUN ./mvnw -B -pl api-gateway package -DskipTests
+RUN --mount=type=cache,target=/root/.m2 ./mvnw -B -pl api-gateway -am package -DskipTests
 
 # ── Stage 2: Runtime ─────────────────────────────────────────────────────────
 FROM eclipse-temurin:21-jre-alpine

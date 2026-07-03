@@ -14,4 +14,6 @@ public interface PaymentRepository extends JpaRepository<Payment, String> {
 
     Page<Payment> findBySourceAccountIdOrTargetAccountIdOrderBySubmittedAtDesc(
             Long sourceAccountId, Long targetAccountId, Pageable pageable);
+
+    List<Payment> findByStatusAndSubmittedAtBefore(com.example.bank.enums.PaymentStatus status, java.time.LocalDateTime date);
 }

@@ -46,7 +46,7 @@ public class PaymentTaskListener {
         Payment payment = paymentRepository.findById(task.getPaymentId())
                 .orElseThrow(() -> new RuntimeException("Payment not found: " + task.getPaymentId()));
 
-        if (payment.getStatus() != PaymentStatus.PENDING) {
+        if (payment.getStatus() != PaymentStatus.PENDING && payment.getStatus() != PaymentStatus.PROCESSING) {
             log.info("Payment {} already processed (status={}). Skipping.", payment.getId(), payment.getStatus());
             return;
         }

@@ -1,71 +1,92 @@
-# Bank Application - Backend
+# Bank Application — Backend
 
-This is the Spring Boot backend for the Bank Application. It provides a RESTful API for the frontend to interact with. It handles business logic, data persistence, and authentication.
+Multi-module Spring Boot microservice backend for the Bank Application.
 
-## Features
+## Architecture
 
-*   **User Management:** Handles user registration and authentication using Spring Security.
-*   **Account Management:** Provides endpoints for creating, viewing, and deleting bank accounts.
-*   **Transactions:** Includes endpoints for depositing and withdrawing funds from an account.
-*   **Data Persistence:** Uses Spring Data JPA with Hibernate to interact with a MySQL database.
+The backend is organized as a **Maven multi-module project** with a shared parent POM. Each service is independently deployable with its own Dockerfile.
 
-## Technologies Used
+| Module                | Type      | Port | Database        | Key Dependencies                          |
+|-----------------------|-----------|------|-----------------|-------------------------------------------|
+| `common-lib`          | Library   | —    | —               | Shared DTOs, Kafka events, exceptions      |
+| `user-service`        | Service   | 8081 | `bank_users`    | Spring Security, JPA, Kafka, Redis, Mail   |
+| `account-service`     | Service   | 8082 | `bank_accounts` | JPA, Kafka, OpenFeign (→ user-service)     |
+| `payment-service`     | Service   | 8083 | `bank_payments` | JPA, Kafka, OpenFeign (→ account-service), WebSocket |
+| `notification-service`| Service   | 8084 | —               | Kafka consumer, WebSocket (STOMP/SockJS)   |
+| `api-gateway`         | Gateway   | 8080 | —               | Spring Cloud Gateway, Redis rate limiter   |
 
-*   **Java:** The primary programming language for the backend.
-*   **Spring Boot:** A framework for creating stand-alone, production-grade Spring-based applications.
-*   **Spring Security:** Provides authentication and authorization for the application.
-*   **Spring Data JPA (Hibernate):** Used for data persistence and ORM.
-*   **MySQL:** The relational database used to store application data.
-*   **Maven:** A build automation tool used for managing the project's build, reporting, and documentation.
+## Inter-Service Communication
 
-## Installation and Setup
+- **Synchronous:** OpenFeign clients (account → user, payment → account) authenticated via `INTERNAL_SERVICE_SECRET`
+- **Asynchronous:** Kafka events (payment → notification, account → notification)
+- **Client-facing:** API Gateway routes all external traffic, validates JWTs, enforces rate limits
 
-### Prerequisites
+## Prerequisites
 
-*   Java 21 or later
-*   Maven 3.x
-*   MySQL 8.x
+- Java 21+
+- Maven 3.x (or use the included `mvnw` wrapper)
+- Running infrastructure: MySQL 8, Redis 7, Kafka (see root `docker-compose.yml`)
 
-### Database Setup
+## Running Locally
 
-1.  **Create a database:**
-    Make sure you have a MySQL server running and create a database named `bank`.
+### 1. Start infrastructure via Docker
 
-2.  **Configure database credentials:**
-    Open the `src/main/resources/application.yaml` file and update the `spring.datasource.username` and `spring.datasource.password` properties with your MySQL credentials.
+```bash
+# From the repo root:
+docker compose up -d    # Starts MySQL, Redis, Kafka, Zookeeper
+```
 
-### Running the Backend
+### 2. Configure environment
 
-1.  **Navigate to the server directory:**
-    ```bash
-    cd server
-    ```
+Create `server/.env`:
+```properties
+DB_USERNAME=root
+DB_PASSWORD=password
+JWT_SECRET=my_super_secret_jwt_key_1234567890
+INTERNAL_SERVICE_SECRET=my_internal_service_secret_key
+```
 
-2.  **Run the backend server:**
-    Use the Maven wrapper to run the application:
-    ```bash
-    ./mvnw spring-boot:run
-    ```
-    The backend server will start on port `8080`.
+### 3. Run services
 
-## API Endpoints
+Each service must be started separately (order matters for Feign dependencies):
 
-The backend provides the following REST API endpoints.
+```bash
+cd server
 
-### User Endpoints
+# 1. User Service (no dependencies on other services)
+./mvnw spring-boot:run -pl user-service
 
-*   `POST /api/users`: Create a new user.
-*   `POST /api/users/login`: Authenticate a user and get a token.
+# 2. Account Service (depends on user-service)
+./mvnw spring-boot:run -pl account-service
 
-### Account Endpoints
+# 3. Payment Service (depends on account-service)
+./mvnw spring-boot:run -pl payment-service
 
-All account endpoints require authentication.
+# 4. Notification Service (depends on Kafka only)
+./mvnw spring-boot:run -pl notification-service
 
-*   `POST /api/accounts`: Create a new bank account for the authenticated user.
-*   `GET /api/accounts`: Get all accounts for the authenticated user.
-*   `GET /api/accounts/{id}`: Get an account by its ID.
-*   `PUT /api/accounts/{id}/deposit`: Deposit an amount into an account.
-*   `PUT /api/accounts/{id}/withdraw`: Withdraw an amount from an account.
-*   `DELETE /api/accounts/{id}`: Delete an account by its ID.
+# 5. API Gateway (depends on all services)
+./mvnw spring-boot:run -pl api-gateway
+```
 
-For detailed request and response formats, please refer to the code or use a tool like Postman to interact with the API.
+## Building
+
+```bash
+# Build all modules:
+cd server
+./mvnw -B clean package -DskipTests
+
+# Build a single service:
+./mvnw -B -pl user-service -am package -DskipTests
+```
+
+## API Routes (via Gateway on :8080)
+
+| Method | Path                    | Service          | Auth Required |
+|--------|-------------------------|------------------|---------------|
+| POST   | `/api/v1/users/login`   | user-service     | No            |
+| POST   | `/api/v1/users/**`      | user-service     | Varies        |
+| GET    | `/api/v1/accounts/**`   | account-service  | Yes           |
+| POST   | `/api/v1/payments/**`   | payment-service  | Yes           |
+| GET    | `/api/v1/admin/**`      | user-service     | Admin only    |
+| WS     | `/ws/**`                | notification-svc | Token         |

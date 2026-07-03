@@ -1,24 +1,14 @@
-# ─── Bank Application — Full Stack Docker Compose ────────────────────────────
-#
-# Usage:
-#   docker compose up -d                          → infrastructure only (MySQL, Redis, Kafka)
-#   docker compose --profile backend up -d        → infra + all backend microservices
-#   docker compose --profile full up -d           → infra + backend + client UI
-#   docker compose up -d --build user-service     → rebuild & restart a single service
-#
-# Env:
-#   Copy .env.example → .env and fill in secrets before first run.
-# ─────────────────────────────────────────────────────────────────────────────
-
+# ─── Shared Network ──────────────────────────────────────────────────────────
 networks:
   bank-net:
     driver: bridge
 
+# ─── Named Volumes ───────────────────────────────────────────────────────────
 volumes:
   mysql-data:
   redis-data:
 
-# ─── Reusable environment block ─────────────────────────────────────────────
+# ─── Reusable environment block ──────────────────────────────────────────────
 x-common-env: &common-env
   DB_USERNAME: ${DB_USERNAME}
   DB_PASSWORD: ${DB_PASSWORD}
@@ -29,16 +19,9 @@ x-common-env: &common-env
   REDIS_PORT: ${REDIS_PORT:-6379}
   CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost,http://localhost:5173,http://localhost:3000}
 
-# ─── Reusable healthcheck for JVM services ───────────────────────────────────
-x-jvm-healthcheck: &jvm-healthcheck
-  interval: 15s
-  timeout: 5s
-  retries: 5
-  start_period: 60s
-
 services:
 
-  # ── Infrastructure ──────────────────────────────────────────────────────────
+  # ── Infrastructure ────────────────────────────────────────────────────────
 
   mysql:
     image: mysql:8.0
@@ -51,7 +34,7 @@ services:
       MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
     volumes:
       - mysql-data:/var/lib/mysql
-      - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql:ro
+      - ../init-db.sql:/docker-entrypoint-initdb.d/init-db.sql:ro
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${DB_PASSWORD}"]
       interval: 10s
@@ -115,37 +98,36 @@ services:
       retries: 10
       start_period: 30s
 
-  # ── Backend Microservices ───────────────────────────────────────────────────
+  # ── Spring Boot Microservices ─────────────────────────────────────────────
 
   user-service:
     build:
-      context: ./server
+      context: .
       dockerfile: user-service/Dockerfile
     image: bank-user-service:latest
     container_name: bank-user-service
     restart: unless-stopped
     networks: [bank-net]
-    profiles: [backend, full]
     depends_on:
       mysql:
-        condition: service_healthy
-      kafka:
         condition: service_healthy
     environment:
       <<: *common-env
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:8081/actuator/health"]
-      <<: *jvm-healthcheck
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
 
   account-service:
     build:
-      context: ./server
+      context: .
       dockerfile: account-service/Dockerfile
     image: bank-account-service:latest
     container_name: bank-account-service
     restart: unless-stopped
     networks: [bank-net]
-    profiles: [backend, full]
     depends_on:
       mysql:
         condition: service_healthy
@@ -157,17 +139,19 @@ services:
       <<: *common-env
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:8082/actuator/health"]
-      <<: *jvm-healthcheck
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
 
   payment-service:
     build:
-      context: ./server
+      context: .
       dockerfile: payment-service/Dockerfile
     image: bank-payment-service:latest
     container_name: bank-payment-service
     restart: unless-stopped
     networks: [bank-net]
-    profiles: [backend, full]
     depends_on:
       mysql:
         condition: service_healthy
@@ -179,17 +163,19 @@ services:
       <<: *common-env
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:8083/actuator/health"]
-      <<: *jvm-healthcheck
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
 
   notification-service:
     build:
-      context: ./server
+      context: .
       dockerfile: notification-service/Dockerfile
     image: bank-notification-service:latest
     container_name: bank-notification-service
     restart: unless-stopped
     networks: [bank-net]
-    profiles: [backend, full]
     depends_on:
       kafka:
         condition: service_healthy
@@ -197,19 +183,19 @@ services:
       <<: *common-env
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:8084/actuator/health"]
-      <<: *jvm-healthcheck
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
 
   api-gateway:
     build:
-      context: ./server
+      context: .
       dockerfile: api-gateway/Dockerfile
     image: bank-api-gateway:latest
     container_name: bank-api-gateway
     restart: unless-stopped
     networks: [bank-net]
-    profiles: [backend, full]
-    ports:
-      - "8080:8080"
     depends_on:
       redis:
         condition: service_healthy
@@ -225,21 +211,8 @@ services:
       <<: *common-env
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:8080/actuator/health"]
-      <<: *jvm-healthcheck
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
 
-  # ── Frontend ────────────────────────────────────────────────────────────────
-
-  client:
-    build:
-      context: ./client
-      dockerfile: Dockerfile
-    image: bank-client:latest
-    container_name: bank-client
-    restart: unless-stopped
-    networks: [bank-net]
-    profiles: [full]
-    ports:
-      - "3000:80"
-    depends_on:
-      api-gateway:
-        condition: service_healthy

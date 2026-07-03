@@ -16,15 +16,38 @@ spring:
           filters:
             - SetStatus=404
 
-        - id: user-service
+        - id: user-login
           uri: http://bank-user-service:8081
           predicates:
-            - Path=/api/v1/users/**, /api/v1/users/login
+            - Path=/api/v1/users/login
+            - Method=POST
+          filters:
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: 5
+                redis-rate-limiter.burstCapacity: 10
+                key-resolver: "#{@ipKeyResolver}"
+
+        - id: user-general
+          uri: http://bank-user-service:8081
+          predicates:
+            - Path=/api/v1/users/**
           filters:
             - name: RequestRateLimiter
               args:
                 redis-rate-limiter.replenishRate: 60
                 redis-rate-limiter.burstCapacity: 60
+                key-resolver: "#{@ipKeyResolver}"
+
+        - id: user-admin
+          uri: http://bank-user-service:8081
+          predicates:
+            - Path=/api/v1/admin/**, /api/v1/audit/**
+          filters:
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: 10
+                redis-rate-limiter.burstCapacity: 20
                 key-resolver: "#{@ipKeyResolver}"
 
         - id: account-service
@@ -45,9 +68,9 @@ spring:
           filters:
             - name: RequestRateLimiter
               args:
-                redis-rate-limiter.replenishRate: 30
-                redis-rate-limiter.burstCapacity: 30
-                key-resolver: "#{@ipKeyResolver}"
+                redis-rate-limiter.replenishRate: 10
+                redis-rate-limiter.burstCapacity: 20
+                key-resolver: "#{@userKeyResolver}"
 
         - id: notification-ws
           uri: http://bank-notification-service:8084
@@ -78,3 +101,7 @@ management:
   endpoint:
     health:
       show-details: never
+
+logging:
+  file:
+    name: ${LOG_PATH:./logs}/${spring.application.name}.log

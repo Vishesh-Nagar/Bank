@@ -25,6 +25,8 @@ cors:
 logging:
   level:
     org.apache.kafka: ERROR
+  file:
+    name: ${LOG_PATH:./logs}/${spring.application.name}.log
 
 management:
   endpoints:
@@ -34,3 +36,4 @@ management:
   endpoint:
     health:
       show-details: never
+

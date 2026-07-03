@@ -57,9 +57,12 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(HttpMethod.POST, "/api/v1/users", "/api/v1/users/login").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/v1/users", "/api/v1/users/login",
+                                "/api/v1/users/forgot-password", "/api/v1/users/reset-password",
+                                "/api/v1/users/refresh").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/users/verify-email").permitAll()
                         .requestMatchers("/internal/users/**").permitAll()   // guarded by X-Internal-Auth in filter
-                        .requestMatchers("/error").permitAll()
+                        .requestMatchers("/error", "/actuator/**").permitAll()
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(headerAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)

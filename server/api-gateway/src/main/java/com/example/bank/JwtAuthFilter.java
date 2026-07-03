@@ -39,6 +39,10 @@ public class JwtAuthFilter implements GlobalFilter, Ordered {
     // Paths that never require a JWT
     private static final List<String> PUBLIC_PATHS = List.of(
             "/api/v1/users/login",
+            "/api/v1/users/forgot-password",
+            "/api/v1/users/reset-password",
+            "/api/v1/users/verify-email",
+            "/api/v1/users/refresh",
             "/ws/info"
     );
 
