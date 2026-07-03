@@ -4,6 +4,9 @@ spring:
   cloud:
     compatibility-verifier:
       enabled: false
+    openfeign:
+      circuitbreaker:
+        enabled: true
   application:
     name: payment-service
   datasource:
@@ -47,6 +50,18 @@ logging:
     name: ${LOG_PATH:./logs}/${spring.application.name}.log
   pattern:
     level: "%5p [${spring.application.name:},%X{traceId:-},%X{spanId:-}]"
+
+resilience4j:
+  circuitbreaker:
+    configs:
+      default:
+        slidingWindowSize: 10
+        permittedNumberOfCallsInHalfOpenState: 3
+        failureRateThreshold: 50
+        waitDurationInOpenState: 10s
+    instances:
+      account-service:
+        baseConfig: default
 
 management:
   endpoints:

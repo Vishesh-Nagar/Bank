@@ -27,6 +27,10 @@ spring:
                 windowSizeInSeconds: 60
                 maxRequests: 10
                 keyResolverBeanName: ipKeyResolver
+            - name: CircuitBreaker
+              args:
+                name: defaultCircuitBreaker
+                fallbackUri: forward:/fallback
 
         - id: user-general
           uri: ${USER_SERVICE_URL:http://bank-user-service:8081}
@@ -38,6 +42,10 @@ spring:
                 windowSizeInSeconds: 60
                 maxRequests: 60
                 keyResolverBeanName: ipKeyResolver
+            - name: CircuitBreaker
+              args:
+                name: defaultCircuitBreaker
+                fallbackUri: forward:/fallback
 
         - id: user-admin
           uri: ${USER_SERVICE_URL:http://bank-user-service:8081}
@@ -49,6 +57,10 @@ spring:
                 windowSizeInSeconds: 60
                 maxRequests: 20
                 keyResolverBeanName: ipKeyResolver
+            - name: CircuitBreaker
+              args:
+                name: defaultCircuitBreaker
+                fallbackUri: forward:/fallback
 
         - id: account-service
           uri: ${ACCOUNT_SERVICE_URL:http://bank-account-service:8082}
@@ -60,6 +72,10 @@ spring:
                 windowSizeInSeconds: 60
                 maxRequests: 100
                 keyResolverBeanName: ipKeyResolver
+            - name: CircuitBreaker
+              args:
+                name: defaultCircuitBreaker
+                fallbackUri: forward:/fallback
 
         - id: payment-service
           uri: ${PAYMENT_SERVICE_URL:http://bank-payment-service:8083}
@@ -71,11 +87,20 @@ spring:
                 windowSizeInSeconds: 60
                 maxRequests: 20
                 keyResolverBeanName: userKeyResolver
+            - name: CircuitBreaker
+              args:
+                name: defaultCircuitBreaker
+                fallbackUri: forward:/fallback
 
         - id: notification-ws
           uri: ${NOTIFICATION_SERVICE_URL:http://bank-notification-service:8084}
           predicates:
             - Path=/ws/**
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: defaultCircuitBreaker
+                fallbackUri: forward:/fallback
 
 server:
   port: 8080
@@ -113,3 +138,15 @@ logging:
     name: ${LOG_PATH:./logs}/${spring.application.name}.log
   pattern:
     level: "%5p [${spring.application.name:},%X{traceId:-},%X{spanId:-}]"
+
+resilience4j:
+  circuitbreaker:
+    configs:
+      default:
+        slidingWindowSize: 10
+        permittedNumberOfCallsInHalfOpenState: 3
+        failureRateThreshold: 50
+        waitDurationInOpenState: 10s
+    instances:
+      defaultCircuitBreaker:
+        baseConfig: default

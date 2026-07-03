@@ -160,7 +160,7 @@ class TransferLimitConcurrencyTest {
 
         assertThat(new BigDecimal(storedTotal))
                 .as("Redis total must not exceed the $5,000 daily limit")
-                .isLessThanOrEqualByComparingTo(new BigDecimal("5000.00"));
+                .isLessThanOrEqualTo(new BigDecimal("5000.00"));
 
         assertThat(new BigDecimal(storedTotal))
                 .as("Redis total must equal exactly 8 × $600 = $4,800")
