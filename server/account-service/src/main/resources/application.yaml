@@ -28,7 +28,7 @@ server:
   port: 8082
 
 user-service:
-  url: http://bank-user-service:8081
+  url: ${USER_SERVICE_URL:http://bank-user-service:8081}
 
 internal:
   service-secret: ${INTERNAL_SERVICE_SECRET:my_internal_service_secret_key}

@@ -17,7 +17,7 @@ spring:
             - SetStatus=404
 
         - id: user-login
-          uri: http://bank-user-service:8081
+          uri: ${USER_SERVICE_URL:http://bank-user-service:8081}
           predicates:
             - Path=/api/v1/users/login
             - Method=POST
@@ -29,7 +29,7 @@ spring:
                 keyResolverBeanName: ipKeyResolver
 
         - id: user-general
-          uri: http://bank-user-service:8081
+          uri: ${USER_SERVICE_URL:http://bank-user-service:8081}
           predicates:
             - Path=/api/v1/users/**
           filters:
@@ -40,7 +40,7 @@ spring:
                 keyResolverBeanName: ipKeyResolver
 
         - id: user-admin
-          uri: http://bank-user-service:8081
+          uri: ${USER_SERVICE_URL:http://bank-user-service:8081}
           predicates:
             - Path=/api/v1/admin/**, /api/v1/audit/**
           filters:
@@ -51,7 +51,7 @@ spring:
                 keyResolverBeanName: ipKeyResolver
 
         - id: account-service
-          uri: http://bank-account-service:8082
+          uri: ${ACCOUNT_SERVICE_URL:http://bank-account-service:8082}
           predicates:
             - Path=/api/v1/accounts/**
           filters:
@@ -62,7 +62,7 @@ spring:
                 keyResolverBeanName: ipKeyResolver
 
         - id: payment-service
-          uri: http://bank-payment-service:8083
+          uri: ${PAYMENT_SERVICE_URL:http://bank-payment-service:8083}
           predicates:
             - Path=/api/v1/payments/**
           filters:
@@ -73,7 +73,7 @@ spring:
                 keyResolverBeanName: userKeyResolver
 
         - id: notification-ws
-          uri: http://bank-notification-service:8084
+          uri: ${NOTIFICATION_SERVICE_URL:http://bank-notification-service:8084}
           predicates:
             - Path=/ws/**
 

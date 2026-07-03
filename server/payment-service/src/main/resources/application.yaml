@@ -35,7 +35,7 @@ server:
   port: 8083
 
 account-service:
-  url: http://bank-account-service:8082
+  url: ${ACCOUNT_SERVICE_URL:http://bank-account-service:8082}
 
 internal:
   service-secret: ${INTERNAL_SERVICE_SECRET:my_internal_service_secret_key}

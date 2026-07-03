@@ -81,6 +81,10 @@ public class JwtAuthFilter implements GlobalFilter, Ordered {
 
         if (isPublic(request)) {
             ServerHttpRequest mutated = request.mutate()
+                    .headers(headers -> {
+                        headers.remove("X-Authenticated-User");
+                        headers.remove("X-Authenticated-UserId");
+                    })
                     .header("X-Request-Id", finalRequestId)
                     .build();
             return chain.filter(exchange.mutate().request(mutated).build());
@@ -118,6 +122,10 @@ public class JwtAuthFilter implements GlobalFilter, Ordered {
                 String userId = userIdClaim != null ? userIdClaim.toString() : "";
 
                 ServerHttpRequest mutated = request.mutate()
+                        .headers(headers -> {
+                            headers.remove("X-Authenticated-User");
+                            headers.remove("X-Authenticated-UserId");
+                        })
                         .header("X-Authenticated-User", username)
                         .header("X-Authenticated-UserId", userId)
                         .header("X-Request-Id", finalRequestId)

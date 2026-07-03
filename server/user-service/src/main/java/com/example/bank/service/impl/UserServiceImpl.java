@@ -145,7 +145,9 @@ public class UserServiceImpl implements UserService {
             user.setEmailVerified(false);
             try {
                 emailVerificationService.sendVerificationEmail(user);
-            } catch (Exception ignored) {}
+            } catch (Exception e) {
+                log.error("Failed to send verification email to {} after email update", user.getEmail(), e);
+            }
         }
 
         if (dto.getNewPassword() != null && !dto.getNewPassword().isBlank()) {

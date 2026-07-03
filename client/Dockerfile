@@ -17,5 +17,9 @@ COPY nginx.conf /etc/nginx/conf.d/default.conf
 
 COPY --from=build /app/dist /usr/share/nginx/html
 
+ENV API_GATEWAY_URL="http://bank-api-gateway:8080"
+
 EXPOSE 80
-CMD ["nginx", "-g", "daemon off;"]
+CMD envsubst '${API_GATEWAY_URL}' < /etc/nginx/conf.d/default.conf > /etc/nginx/conf.d/default.conf.tmp && \
+    mv /etc/nginx/conf.d/default.conf.tmp /etc/nginx/conf.d/default.conf && \
+    nginx -g 'daemon off;'
