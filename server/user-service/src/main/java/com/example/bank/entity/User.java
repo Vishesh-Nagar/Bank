@@ -37,6 +37,18 @@ public class User {
     @Column(nullable = false)
     private Short passwordVersion = 2;
 
+    /** False = soft-deleted / disabled by system. */
+    @Column(nullable = false)
+    private boolean enabled = true;
+
+    /** True = admin has frozen this account. */
+    @Column(nullable = false)
+    private boolean accountLocked = false;
+
+    /** True = user has clicked the verification link in their email. */
+    @Column(nullable = false)
+    private boolean emailVerified = false;
+
     @CreationTimestamp
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;

@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import { login } from "../services/userService";
 import { register } from "../services/userService";
 import type { UserCreateDto } from "../types";
@@ -10,6 +10,7 @@ import {
     Typography,
     Box,
     Paper,
+    Alert,
 } from "@mui/material";
 
 interface AuthFormProps {
@@ -19,10 +20,18 @@ interface AuthFormProps {
 
 const AuthForm: React.FC<AuthFormProps> = ({ mode, onModeChange }) => {
     const navigate = useNavigate();
+    const location = useLocation();
     const [username, setUsername] = useState("");
     const [password, setPassword] = useState("");
     const [email, setEmail] = useState("");
     const [error, setError] = useState<string | null>(null);
+    const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
+    useEffect(() => {
+        if (location.state?.message) {
+            setSuccessMessage(location.state.message);
+        }
+    }, [location.state]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -35,8 +44,9 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode, onModeChange }) => {
             } else {
                 const user: UserCreateDto = { username, password, email };
                 await register(user);
-                await login({ username, password });
-                navigate("/dashboard");
+                // Redirect to a check-email screen or just show a message
+                navigate("/login", { state: { message: "Registration successful. Please check your email to verify your account before logging in." } });
+                onModeChange("login");
             }
         } catch (err: any) {
             const defaultMessage =
@@ -83,10 +93,17 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode, onModeChange }) => {
                                 fontWeight: 700,
                                 color: "#ffffff",
                                 textTransform: "capitalize",
+                                mb: 2,
                             }}
                         >
                             {mode === "login" ? "Login" : "Sign Up"}
                         </Typography>
+
+                        {successMessage && (
+                            <Alert severity="success" sx={{ width: "100%", mb: 2 }}>
+                                {successMessage}
+                            </Alert>
+                        )}
                     </Box>
 
                     <Box component="form" onSubmit={handleSubmit} noValidate>
@@ -211,6 +228,21 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode, onModeChange }) => {
                             >
                                 {error}
                             </Typography>
+                        )}
+
+                        {mode === "login" && (
+                            <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 1 }}>
+                                <Button
+                                    onClick={() => navigate("/forgot-password")}
+                                    sx={{
+                                        textTransform: "none",
+                                        color: "#aaaaaa",
+                                        "&:hover": { color: "#ffffff" }
+                                    }}
+                                >
+                                    Forgot Password?
+                                </Button>
+                            </Box>
                         )}
 
                         <Button
