@@ -2,16 +2,13 @@ package com.example.bank.exception;
 
 import com.example.bank.enums.ErrorCode;
 
-public class AccountException extends RuntimeException {
+public class AccountException extends BaseAppException {
 
-    private final ErrorCode errorCode;
-
-    public AccountException(ErrorCode errorCode, String message) {
-        super(message);
-        this.errorCode = errorCode;
+    public AccountException(ErrorCode errorCode) {
+        super(errorCode);
     }
 
-    public ErrorCode getErrorCode() {
-        return errorCode;
+    public AccountException(ErrorCode errorCode, String customMessage) {
+        super(errorCode, customMessage);
     }
 }
