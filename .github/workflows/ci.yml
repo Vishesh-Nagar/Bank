@@ -1,0 +1,78 @@
+name: CI — Build & Integration Tests
+
+# Triggers: every push to main and every pull request targeting main.
+# Testcontainers runs real Docker containers for MySQL and Redis on the GitHub
+# Actions runner (ubuntu-latest ships with Docker pre-installed, no extra setup needed).
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-and-test:
+    name: Build & Integration Tests (Java 21)
+    runs-on: ubuntu-latest
+
+    steps:
+      # ── 1. Checkout ─────────────────────────────────────────────────────────
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # ── 2. JDK setup ────────────────────────────────────────────────────────
+      - name: Set up JDK 21 (Temurin)
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      # ── 3. Maven cache ───────────────────────────────────────────────────────
+      # Caching the ~/.m2 repository dramatically speeds up subsequent runs
+      # by avoiding redundant dependency downloads.
+      - name: Cache Maven packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-maven-
+
+      # ── 4. Build common-lib first (required by child services) ───────────────
+      - name: Install common-lib to local Maven repository
+        working-directory: server
+        run: ./mvnw -pl common-lib install -DskipTests -q
+
+      # ── 5. Run integration tests ─────────────────────────────────────────────
+      # We target only the two services with tests. Testcontainers pulls Docker
+      # images for MySQL and Redis automatically during the test run.
+      - name: Run integration tests (payment-service)
+        working-directory: server
+        run: ./mvnw -pl payment-service test -Dspring.profiles.active=test
+        env:
+          # Testcontainers uses the DOCKER_HOST socket by default on Linux runners.
+          # No explicit DOCKER_HOST is needed on ubuntu-latest.
+          TESTCONTAINERS_RYUK_DISABLED: "false"
+
+      - name: Run integration tests (account-service)
+        working-directory: server
+        run: ./mvnw -pl account-service test -Dspring.profiles.active=test
+        env:
+          TESTCONTAINERS_RYUK_DISABLED: "false"
+
+      # ── 6. Publish test results ──────────────────────────────────────────────
+      - name: Publish JUnit test results
+        uses: dorny/test-reporter@v1
+        if: always()   # Run even if tests fail so we always see the report
+        with:
+          name: JUnit Test Results
+          path: 'server/*/target/surefire-reports/TEST-*.xml'
+          reporter: java-junit
+
+      # ── 7. Upload Surefire reports on failure ────────────────────────────────
+      - name: Upload Surefire reports on failure
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: surefire-reports
+          path: server/*/target/surefire-reports/
+          retention-days: 7
