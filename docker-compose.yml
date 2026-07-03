@@ -27,6 +27,7 @@ x-common-env: &common-env
   KAFKA_BOOTSTRAP: ${KAFKA_BOOTSTRAP:-bank-kafka:29092}
   REDIS_HOST: ${REDIS_HOST:-bank-redis}
   REDIS_PORT: ${REDIS_PORT:-6379}
+  ZIPKIN_HOST: ${ZIPKIN_HOST:-bank-zipkin}
   CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost,http://localhost:5173,http://localhost:3000}
 
 # ─── Reusable healthcheck for JVM services ───────────────────────────────────
@@ -114,6 +115,14 @@ services:
       timeout: 10s
       retries: 10
       start_period: 30s
+
+  zipkin:
+    image: openzipkin/zipkin:latest
+    container_name: bank-zipkin
+    restart: unless-stopped
+    networks: [bank-net]
+    ports:
+      - "9411:9411"
 
   # ── Backend Microservices ───────────────────────────────────────────────────
 
