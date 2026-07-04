@@ -1,0 +1,37 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: bank-client
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: bank-client
+  template:
+    metadata:
+      labels:
+        app: bank-client
+    spec:
+      containers:
+        - name: client
+          image: my-registry/bank-client:latest
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: VITE_API_URL
+              # If deployed on K8s, the LoadBalancer IP/Domain of the API Gateway is required here
+              # For local minikube testing, we use the NodePort or cluster domain
+              value: "http://bank-api-gateway:8080"
+          ports:
+            - containerPort: 80
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: bank-client
+spec:
+  type: LoadBalancer
+  ports:
+    - port: 80
+      targetPort: 80
+  selector:
+    app: bank-client
