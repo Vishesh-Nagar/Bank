@@ -54,6 +54,17 @@ docker compose --profile full up -d
 #    API:     http://localhost:8080
 ```
 
+### Viewing Logs (Isolated Terminals)
+By running the cluster in detached mode (`-d`), you can open multiple terminal windows to monitor specific services individually without the logs overlapping:
+```bash
+# Terminal 1: Watch API Gateway logs
+docker compose logs -f bank-api-gateway
+
+# Terminal 2: Watch User Service logs
+docker compose logs -f bank-user-service
+```
+*(Press `Ctrl+C` to stop watching the logs. To stop the entire cluster, run `docker compose down`)*
+
 ### Docker Compose Profiles
 
 | Command                                      | What it starts                        |

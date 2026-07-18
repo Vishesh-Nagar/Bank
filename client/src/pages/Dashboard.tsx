@@ -26,6 +26,7 @@ import ScheduledPaymentModal from "../components/Dashboard/modals/ScheduledPayme
 import PaymentHistory from "../components/Dashboard/PaymentHistory";
 import NotificationToast from "../components/Notifications/NotificationToast";
 import ActivePaymentsSection from "../components/Dashboard/ActivePaymentsSection";
+import { Button } from "../components/ui/Button";
 
 const Dashboard: React.FC = () => {
     const navigate = useNavigate();
@@ -197,15 +198,18 @@ const Dashboard: React.FC = () => {
 
     if (loading) {
         return (
-            <div className="h-screen flex flex-col justify-center items-center gap-2.5 text-4xl">
-                <div className="w-12 h-12 border-4 border-blue-500/15 border-t-blue-500 rounded-full animate-spin" />
-                <p className="text-base text-slate-400">Loading accounts...</p>
+            <div className="h-screen flex flex-col justify-center items-center gap-4 text-4xl">
+                <svg className="animate-spin h-12 w-12 text-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <p className="text-base text-text-muted">Loading accounts...</p>
             </div>
         );
     }
 
     return (
-        <div className="px-6 py-6 max-w-[1400px] mx-auto min-h-screen bg-[#0a0a0a] text-white">
+        <div className="px-6 py-6 max-w-[1400px] mx-auto min-h-screen bg-background text-text-main">
             {/* Real-time toast notifications */}
             <NotificationToast
                 notifications={notifications}
@@ -231,11 +235,11 @@ const Dashboard: React.FC = () => {
 
             {/* Error banner */}
             {error && (
-                <div className="bg-red-500/10 border border-red-500/30 text-red-300 px-5 py-4 rounded-xl mb-6 flex justify-between items-center animate-error-slide">
+                <div className="bg-red-500/10 border border-red-500/20 text-red-400 px-5 py-4 rounded-xl mb-6 flex justify-between items-center animate-modal-slide">
                     <span>⚠️ {error}</span>
                     <button
                         onClick={() => setError("")}
-                        className="bg-transparent border-none text-red-300 text-2xl cursor-pointer w-7 h-7 flex items-center justify-center rounded-md hover:bg-red-500/20"
+                        className="bg-transparent border-none text-red-400 text-2xl cursor-pointer w-7 h-7 flex items-center justify-center rounded-md hover:bg-red-500/20 transition-colors"
                     >
                         &times;
                     </button>
@@ -244,15 +248,14 @@ const Dashboard: React.FC = () => {
 
             {/* Action buttons */}
             <div className="flex gap-3 mb-8">
-                <button
+                <Button
                     onClick={() => setShowCreateModal(true)}
-                    className="btn btn-primary"
                 >
                     + Create New Account
-                </button>
-                <button onClick={() => fetchAccounts()} className="btn btn-secondary">
+                </Button>
+                <Button onClick={() => fetchAccounts()} variant="secondary">
                     ↺ Refresh
-                </button>
+                </Button>
             </div>
 
             <SummaryCards accounts={accounts} refreshing={refreshing} />

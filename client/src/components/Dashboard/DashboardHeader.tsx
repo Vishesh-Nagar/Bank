@@ -1,4 +1,5 @@
 import React from "react";
+import { Button } from "../ui/Button";
 
 type Props = {
     onOpenSidebar: () => void;
@@ -8,33 +9,34 @@ type Props = {
 
 const DashboardHeader: React.FC<Props> = ({ onOpenSidebar, username, onLogout }) => {
     return (
-        <header className="flex justify-between items-center mb-10 p-6 bg-gradient-to-br from-[#1e1e1e] to-[#2a2a2a] rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.6)] border border-white/[0.06]">
-            <h1 className="text-[32px] font-bold bg-gradient-to-br from-blue-500 to-purple-500 bg-clip-text text-transparent">
-                Banking Dashboard
+        <header className="flex justify-between items-center mb-8 p-6 bg-surface rounded-2xl shadow-xl border border-white/5">
+            <h1 className="text-3xl font-bold text-white tracking-tight">
+                Banking <span className="text-primary">Dashboard</span>
             </h1>
 
             {/* Hamburger — visible only on mobile */}
             <button
-                className="md:hidden bg-transparent border-none text-white text-2xl cursor-pointer p-2 rounded-md transition-all duration-300 hover:bg-white/10"
+                className="md:hidden bg-transparent border-none text-text-muted hover:text-text-main text-2xl cursor-pointer p-2 rounded-md transition-all duration-200"
                 onClick={onOpenSidebar}
                 aria-label="Open menu"
             >
-                ☰
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
             </button>
 
             {/* Desktop nav — hidden on mobile */}
-            <div className="hidden md:flex items-center gap-4">
-                <span className="inline-flex items-center justify-center text-sm font-semibold text-slate-300 bg-black/40 px-6 py-3 rounded-xl min-h-[44px]">
-                    Welcome, {username}
+            <div className="hidden md:flex items-center gap-6">
+                <span className="text-sm font-medium text-text-muted">
+                    Welcome, <strong className="text-text-main">{username}</strong>
                 </span>
-                <div className="flex gap-3">
-                    <button onClick={onLogout} className="btn btn-secondary">
-                        Logout
-                    </button>
-                </div>
+                <Button variant="ghost" onClick={onLogout} size="sm">
+                    Logout
+                </Button>
             </div>
         </header>
     );
 };
 
 export default DashboardHeader;
+

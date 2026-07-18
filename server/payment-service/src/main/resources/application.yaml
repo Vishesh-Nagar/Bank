@@ -10,7 +10,7 @@ spring:
   application:
     name: payment-service
   datasource:
-    url: jdbc:mysql://${DB_HOST:bank-mysql}:3306/bank_payments
+    url: jdbc:mysql://${DB_HOST:bank-mysql-payments}:3306/bank_payments
     username: ${DB_USERNAME}
     password: ${DB_PASSWORD}
   jpa:

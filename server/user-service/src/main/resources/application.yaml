@@ -7,7 +7,7 @@ spring:
   application:
     name: user-service
   datasource:
-    url: jdbc:mysql://${DB_HOST:bank-mysql}:3306/bank_users
+    url: jdbc:mysql://${DB_HOST:bank-mysql-users}:3306/bank_users
     username: ${DB_USERNAME}
     password: ${DB_PASSWORD}
   jpa:

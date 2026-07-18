@@ -1,7 +1,9 @@
 import React, { useEffect, useState } from "react";
-import { Container, Box, Paper, Typography, Button, Alert, CircularProgress } from "@mui/material";
 import { useNavigate, useLocation } from "react-router-dom";
 import api from "../services/api";
+import { AppLayout } from "../components/layout/AppLayout";
+import { Card } from "../components/ui/Card";
+import { Button } from "../components/ui/Button";
 
 const VerifyEmail: React.FC = () => {
     const navigate = useNavigate();
@@ -34,52 +36,50 @@ const VerifyEmail: React.FC = () => {
     }, [location]);
 
     return (
-        <Container maxWidth="sm">
-            <Box
-                sx={{
-                    minHeight: "100vh",
-                    display: "flex",
-                    flexDirection: "column",
-                    justifyContent: "center",
-                    alignItems: "center",
-                    paddingY: 2,
-                }}
-            >
-                <Paper
-                    elevation={6}
-                    sx={{
-                        padding: 4,
-                        width: "100%",
-                        backgroundColor: "#1e1e1e",
-                        borderRadius: 2,
-                        textAlign: "center",
-                    }}
-                >
-                    <Typography variant="h5" sx={{ color: "#ffffff", mb: 2, fontWeight: "bold" }}>
-                        Email Verification
-                    </Typography>
+        <AppLayout>
+            <div className="flex-1 flex flex-col justify-center items-center px-4 py-12 sm:px-6 lg:px-8">
+                <div className="w-full max-w-md animate-modal-slide">
+                    <Card padding="lg" className="text-center">
+                        <h2 className="text-2xl font-bold text-text-main mb-6">
+                            Email Verification
+                        </h2>
 
-                    {status === "loading" && <CircularProgress sx={{ my: 3 }} />}
-                    {status === "success" && <Alert severity="success" sx={{ mb: 3 }}>{message}</Alert>}
-                    {status === "error" && <Alert severity="error" sx={{ mb: 3 }}>{message}</Alert>}
+                        {status === "loading" && (
+                            <div className="flex justify-center my-8">
+                                <svg className="animate-spin h-10 w-10 text-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                            </div>
+                        )}
 
-                    {status !== "loading" && (
-                        <Button
-                            variant="contained"
-                            onClick={() => navigate("/login")}
-                            sx={{
-                                backgroundColor: "#1976d2",
-                                color: "#ffffff",
-                                "&:hover": { backgroundColor: "#1565c0" },
-                            }}
-                        >
-                            Go to Login
-                        </Button>
-                    )}
-                </Paper>
-            </Box>
-        </Container>
+                        {status === "success" && (
+                            <div className="mb-8 p-4 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
+                                {message}
+                            </div>
+                        )}
+                        
+                        {status === "error" && (
+                            <div className="mb-8 p-4 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400">
+                                {message}
+                            </div>
+                        )}
+
+                        {status !== "loading" && (
+                            <Button
+                                onClick={() => navigate("/login")}
+                                fullWidth
+                                className="h-11"
+                            >
+                                Go to Login
+                            </Button>
+                        )}
+                    </Card>
+                </div>
+            </div>
+        </AppLayout>
     );
 };
 
 export default VerifyEmail;
+

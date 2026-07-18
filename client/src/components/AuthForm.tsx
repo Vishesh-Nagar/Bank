@@ -1,17 +1,10 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { login } from "../services/userService";
-import { register } from "../services/userService";
+import { login, register } from "../services/userService";
 import type { UserCreateDto } from "../types";
-import {
-    Container,
-    TextField,
-    Button,
-    Typography,
-    Box,
-    Paper,
-    Alert,
-} from "@mui/material";
+import { Button } from "./ui/Button";
+import { Input } from "./ui/Input";
+import { Card } from "./ui/Card";
 
 interface AuthFormProps {
     mode: "login" | "signup";
@@ -26,6 +19,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode, onModeChange }) => {
     const [email, setEmail] = useState("");
     const [error, setError] = useState<string | null>(null);
     const [successMessage, setSuccessMessage] = useState<string | null>(null);
+    const [isLoading, setIsLoading] = useState(false);
 
     useEffect(() => {
         if (location.state?.message) {
@@ -36,6 +30,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode, onModeChange }) => {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError(null);
+        setIsLoading(true);
 
         try {
             if (mode === "login") {
@@ -44,7 +39,6 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode, onModeChange }) => {
             } else {
                 const user: UserCreateDto = { username, password, email };
                 await register(user);
-                // Redirect to a check-email screen or just show a message
                 navigate("/login", { state: { message: "Registration successful. Please check your email to verify your account before logging in." } });
                 onModeChange("login");
             }
@@ -54,268 +48,113 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode, onModeChange }) => {
                     ? "Failed to login. Please try again."
                     : "Failed to register. Please try again.";
             setError(err.response?.data?.message || err.message || defaultMessage);
+        } finally {
+            setIsLoading(false);
         }
     };
 
     return (
-        <Container maxWidth="sm">
-            <Box
-                sx={{
-                    minHeight: "100vh",
-                    display: "flex",
-                    flexDirection: "column",
-                    justifyContent: "center",
-                    alignItems: "center",
-                    paddingY: 2,
-                }}
-            >
-                <Paper
-                    elevation={6}
-                    sx={{
-                        padding: 4,
-                        width: "100%",
-                        backgroundColor: "#1e1e1e",
-                        borderRadius: 2,
-                    }}
-                >
-                    <Box
-                        sx={{
-                            display: "flex",
-                            flexDirection: "column",
-                            alignItems: "center",
-                            marginBottom: 3,
-                        }}
-                    >
-                        <Typography
-                            component="h1"
-                            variant="h4"
-                            sx={{
-                                fontWeight: 700,
-                                color: "#ffffff",
-                                textTransform: "capitalize",
-                                mb: 2,
-                            }}
-                        >
-                            {mode === "login" ? "Login" : "Sign Up"}
-                        </Typography>
+        <div className="flex-1 flex flex-col justify-center items-center px-4 py-12 sm:px-6 lg:px-8">
+            <div className="w-full max-w-md animate-modal-slide">
+                <Card padding="lg">
+                    <div className="text-center mb-8">
+                        <h2 className="text-3xl font-extrabold text-text-main capitalize">
+                            {mode === "login" ? "Welcome Back" : "Create Account"}
+                        </h2>
+                        <p className="mt-2 text-sm text-text-muted">
+                            {mode === "login" 
+                                ? "Enter your credentials to access your account" 
+                                : "Sign up to start managing your finances"}
+                        </p>
+                    </div>
 
-                        {successMessage && (
-                            <Alert severity="success" sx={{ width: "100%", mb: 2 }}>
-                                {successMessage}
-                            </Alert>
-                        )}
-                    </Box>
+                    {successMessage && (
+                        <div className="mb-6 p-4 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-sm">
+                            {successMessage}
+                        </div>
+                    )}
 
-                    <Box component="form" onSubmit={handleSubmit} noValidate>
+                    <form onSubmit={handleSubmit} className="space-y-5" noValidate>
                         {mode === "signup" && (
-                            <TextField
-                                margin="normal"
-                                required
-                                fullWidth
+                            <Input
                                 id="email"
-                                label="Email Address"
                                 name="email"
+                                type="email"
+                                label="Email Address"
                                 autoComplete="email"
                                 autoFocus
+                                required
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
-                                sx={{
-                                    "& .MuiOutlinedInput-root": {
-                                        color: "#ffffff",
-                                        "& fieldset": {
-                                            borderColor: "#444444",
-                                        },
-                                        "&:hover fieldset": {
-                                            borderColor: "#666666",
-                                        },
-                                        "&.Mui-focused fieldset": {
-                                            borderColor: "#1976d2",
-                                        },
-                                    },
-                                    "& .MuiInputBase-input::placeholder": {
-                                        color: "#999999",
-                                        opacity: 1,
-                                    },
-                                    "& .MuiInputLabel-root": {
-                                        color: "#aaaaaa",
-                                        "&.Mui-focused": {
-                                            color: "#1976d2",
-                                        },
-                                    },
-                                }}
                             />
                         )}
 
-                        <TextField
-                            margin="normal"
-                            required
-                            fullWidth
+                        <Input
                             id="username"
-                            label="Username"
                             name="username"
+                            label="Username"
                             autoComplete="username"
+                            required
                             value={username}
                             onChange={(e) => setUsername(e.target.value)}
-                            sx={{
-                                "& .MuiOutlinedInput-root": {
-                                    color: "#ffffff",
-                                    "& fieldset": {
-                                        borderColor: "#444444",
-                                    },
-                                    "&:hover fieldset": {
-                                        borderColor: "#666666",
-                                    },
-                                    "&.Mui-focused fieldset": {
-                                        borderColor: "#1976d2",
-                                    },
-                                },
-                                "& .MuiInputBase-input::placeholder": {
-                                    color: "#999999",
-                                    opacity: 1,
-                                },
-                                "& .MuiInputLabel-root": {
-                                    color: "#aaaaaa",
-                                    "&.Mui-focused": {
-                                        color: "#1976d2",
-                                    },
-                                },
-                            }}
                         />
 
-                        <TextField
-                            margin="normal"
-                            required
-                            fullWidth
-                            name="password"
-                            label="Password"
-                            type="password"
+                        <Input
                             id="password"
+                            name="password"
+                            type="password"
+                            label="Password"
                             autoComplete="current-password"
+                            required
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
-                            sx={{
-                                "& .MuiOutlinedInput-root": {
-                                    color: "#ffffff",
-                                    "& fieldset": {
-                                        borderColor: "#444444",
-                                    },
-                                    "&:hover fieldset": {
-                                        borderColor: "#666666",
-                                    },
-                                    "&.Mui-focused fieldset": {
-                                        borderColor: "#1976d2",
-                                    },
-                                },
-                                "& .MuiInputBase-input::placeholder": {
-                                    color: "#999999",
-                                    opacity: 1,
-                                },
-                                "& .MuiInputLabel-root": {
-                                    color: "#aaaaaa",
-                                    "&.Mui-focused": {
-                                        color: "#1976d2",
-                                    },
-                                },
-                            }}
                         />
 
-
                         {error && (
-                            <Typography
-                                color="error"
-                                variant="body2"
-                                sx={{ marginTop: 2 }}
-                            >
+                            <div className="text-sm text-red-400">
                                 {error}
-                            </Typography>
+                            </div>
                         )}
 
                         {mode === "login" && (
-                            <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 1 }}>
-                                <Button
+                            <div className="flex items-center justify-end">
+                                <button
+                                    type="button"
                                     onClick={() => navigate("/forgot-password")}
-                                    sx={{
-                                        textTransform: "none",
-                                        color: "#aaaaaa",
-                                        "&:hover": { color: "#ffffff" }
-                                    }}
+                                    className="text-sm font-medium text-text-muted hover:text-primary transition-colors"
                                 >
-                                    Forgot Password?
-                                </Button>
-                            </Box>
+                                    Forgot your password?
+                                </button>
+                            </div>
                         )}
 
-                        <Button
-                            type="submit"
-                            fullWidth
-                            variant="contained"
-                            sx={{
-                                marginTop: 3,
-                                marginBottom: 2,
-                                backgroundColor: "#1976d2",
-                                color: "#ffffff",
-                                fontWeight: 600,
-                                padding: "10px",
-                                "&:hover": {
-                                    backgroundColor: "#1565c0",
-                                },
-                            }}
-                        >
-                            {mode === "login" ? "Login" : "Sign Up"}
-                        </Button>
-                    </Box>
+                        <div className="pt-2">
+                            <Button
+                                type="submit"
+                                fullWidth
+                                isLoading={isLoading}
+                                className="h-11"
+                            >
+                                {mode === "login" ? "Sign In" : "Sign Up"}
+                            </Button>
+                        </div>
+                    </form>
 
-                    <Box
-                        sx={{
-                            textAlign: "center",
-                            marginTop: 2,
-                            borderTop: "1px solid #444444",
-                            paddingTop: 2,
-                        }}
-                    >
-                        <Typography variant="body2" sx={{ color: "#aaaaaa" }}>
-                            {mode === "login" ? (
-                                <>
-                                    New here?{" "}
-                                    <Button
-                                        onClick={() => onModeChange("signup")}
-                                        sx={{
-                                            textTransform: "none",
-                                            color: "#1976d2",
-                                            padding: 0,
-                                            fontWeight: 600,
-                                            "&:hover": {
-                                                textDecoration: "underline",
-                                            },
-                                        }}
-                                    >
-                                        Sign up
-                                    </Button>
-                                </>
-                            ) : (
-                                <>
-                                    Already registered?{" "}
-                                    <Button
-                                        onClick={() => onModeChange("login")}
-                                        sx={{
-                                            textTransform: "none",
-                                            color: "#1976d2",
-                                            padding: 0,
-                                            fontWeight: 600,
-                                            "&:hover": {
-                                                textDecoration: "underline",
-                                            },
-                                        }}
-                                    >
-                                        Login
-                                    </Button>
-                                </>
-                            )}
-                        </Typography>
-                    </Box>
-                </Paper>
-            </Box>
-        </Container>
+                    <div className="mt-8 pt-6 border-t border-white/10 text-center">
+                        <p className="text-sm text-text-muted">
+                            {mode === "login" ? "New here? " : "Already registered? "}
+                            <button
+                                type="button"
+                                onClick={() => onModeChange(mode === "login" ? "signup" : "login")}
+                                className="font-semibold text-primary hover:text-primary-hover transition-colors focus:outline-none"
+                            >
+                                {mode === "login" ? "Sign up for an account" : "Sign in instead"}
+                            </button>
+                        </p>
+                    </div>
+                </Card>
+            </div>
+        </div>
     );
 };
 

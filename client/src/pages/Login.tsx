@@ -1,14 +1,23 @@
-import React, { useState } from "react";
+import React from "react";
+import { useNavigate } from "react-router-dom";
 import AuthForm from "../components/AuthForm";
+import { AppLayout } from "../components/layout/AppLayout";
 
 const Login: React.FC = () => {
-    const [mode, setMode] = useState<"login" | "signup">("login");
+    const navigate = useNavigate();
 
     const handleModeChange = (newMode: "login" | "signup") => {
-        setMode(newMode);
+        if (newMode === "signup") {
+            navigate("/register");
+        }
     };
 
-    return <AuthForm mode={mode} onModeChange={handleModeChange} />;
+    return (
+        <AppLayout>
+            <AuthForm mode="login" onModeChange={handleModeChange} />
+        </AppLayout>
+    );
 };
 
 export default Login;
+

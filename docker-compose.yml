@@ -1,7 +1,7 @@
 # ─── Bank Application — Full Stack Docker Compose ────────────────────────────
 #
 # Usage:
-#   docker compose up -d                          → infrastructure only (MySQL, Redis, Kafka)
+#   docker compose up -d                          → infrastructure only (MySQL x3, Redis, Kafka)
 #   docker compose --profile backend up -d        → infra + all backend microservices
 #   docker compose --profile full up -d           → infra + backend + client UI
 #   docker compose up -d --build user-service     → rebuild & restart a single service
@@ -15,7 +15,9 @@ networks:
     driver: bridge
 
 volumes:
-  mysql-data:
+  mysql-users-data:
+  mysql-accounts-data:
+  mysql-payments-data:
   redis-data:
 
 # ─── Reusable environment block ─────────────────────────────────────────────
@@ -30,6 +32,13 @@ x-common-env: &common-env
   ZIPKIN_HOST: ${ZIPKIN_HOST:-bank-zipkin}
   CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost,http://localhost:5173,http://localhost:3000}
 
+# ─── Reusable healthcheck for MySQL ──────────────────────────────────────────
+x-mysql-healthcheck: &mysql-healthcheck
+  interval: 10s
+  timeout: 5s
+  retries: 10
+  start_period: 30s
+
 # ─── Reusable healthcheck for JVM services ───────────────────────────────────
 x-jvm-healthcheck: &jvm-healthcheck
   interval: 15s
@@ -41,24 +50,56 @@ services:
 
   # ── Infrastructure ──────────────────────────────────────────────────────────
 
-  mysql:
+  # Dedicated MySQL instance for user-service (port 3306)
+  mysql-users:
     image: mysql:8.0
-    container_name: bank-mysql
+    container_name: bank-mysql-users
     restart: unless-stopped
     networks: [bank-net]
     ports:
       - "3306:3306"
     environment:
       MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+      MYSQL_DATABASE: bank_users
     volumes:
-      - mysql-data:/var/lib/mysql
-      - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql:ro
+      - mysql-users-data:/var/lib/mysql
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${DB_PASSWORD}"]
-      interval: 10s
-      timeout: 5s
-      retries: 10
-      start_period: 30s
+      <<: *mysql-healthcheck
+
+  # Dedicated MySQL instance for account-service (port 3307)
+  mysql-accounts:
+    image: mysql:8.0
+    container_name: bank-mysql-accounts
+    restart: unless-stopped
+    networks: [bank-net]
+    ports:
+      - "3307:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+      MYSQL_DATABASE: bank_accounts
+    volumes:
+      - mysql-accounts-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${DB_PASSWORD}"]
+      <<: *mysql-healthcheck
+
+  # Dedicated MySQL instance for payment-service (port 3308)
+  mysql-payments:
+    image: mysql:8.0
+    container_name: bank-mysql-payments
+    restart: unless-stopped
+    networks: [bank-net]
+    ports:
+      - "3308:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+      MYSQL_DATABASE: bank_payments
+    volumes:
+      - mysql-payments-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${DB_PASSWORD}"]
+      <<: *mysql-healthcheck
 
   redis:
     image: redis:7-alpine
@@ -136,12 +177,13 @@ services:
     networks: [bank-net]
     profiles: [backend, full]
     depends_on:
-      mysql:
+      mysql-users:
         condition: service_healthy
       kafka:
         condition: service_healthy
     environment:
       <<: *common-env
+      DB_HOST: bank-mysql-users
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:8081/actuator/health"]
       <<: *jvm-healthcheck
@@ -156,7 +198,7 @@ services:
     networks: [bank-net]
     profiles: [backend, full]
     depends_on:
-      mysql:
+      mysql-accounts:
         condition: service_healthy
       kafka:
         condition: service_healthy
@@ -164,6 +206,7 @@ services:
         condition: service_healthy
     environment:
       <<: *common-env
+      DB_HOST: bank-mysql-accounts
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:8082/actuator/health"]
       <<: *jvm-healthcheck
@@ -178,7 +221,7 @@ services:
     networks: [bank-net]
     profiles: [backend, full]
     depends_on:
-      mysql:
+      mysql-payments:
         condition: service_healthy
       kafka:
         condition: service_healthy
@@ -186,6 +229,7 @@ services:
         condition: service_healthy
     environment:
       <<: *common-env
+      DB_HOST: bank-mysql-payments
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:8083/actuator/health"]
       <<: *jvm-healthcheck

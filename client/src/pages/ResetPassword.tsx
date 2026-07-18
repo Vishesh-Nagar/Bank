@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from "react";
-import { Container, Box, Paper, Typography, TextField, Button, Alert } from "@mui/material";
 import { useNavigate, useLocation } from "react-router-dom";
 import api from "../services/api";
+import { AppLayout } from "../components/layout/AppLayout";
+import { Card } from "../components/ui/Card";
+import { Input } from "../components/ui/Input";
+import { Button } from "../components/ui/Button";
 
 const ResetPassword: React.FC = () => {
     const navigate = useNavigate();
@@ -10,6 +13,7 @@ const ResetPassword: React.FC = () => {
     const [message, setMessage] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [token, setToken] = useState<string | null>(null);
+    const [isLoading, setIsLoading] = useState(false);
 
     useEffect(() => {
         const query = new URLSearchParams(location.search);
@@ -31,6 +35,7 @@ const ResetPassword: React.FC = () => {
             return;
         }
 
+        setIsLoading(true);
         try {
             await api.post("/api/v1/users/reset-password", { token, newPassword });
             setMessage("Password reset successfully.");
@@ -39,90 +44,68 @@ const ResetPassword: React.FC = () => {
             }, 2000);
         } catch (err: any) {
             setError(err.response?.data?.message || "Failed to reset password.");
+        } finally {
+            setIsLoading(false);
         }
     };
 
     return (
-        <Container maxWidth="sm">
-            <Box
-                sx={{
-                    minHeight: "100vh",
-                    display: "flex",
-                    flexDirection: "column",
-                    justifyContent: "center",
-                    alignItems: "center",
-                    paddingY: 2,
-                }}
-            >
-                <Paper
-                    elevation={6}
-                    sx={{
-                        padding: 4,
-                        width: "100%",
-                        backgroundColor: "#1e1e1e",
-                        borderRadius: 2,
-                    }}
-                >
-                    <Typography variant="h5" sx={{ color: "#ffffff", mb: 2, fontWeight: "bold" }}>
-                        Reset Password
-                    </Typography>
+        <AppLayout>
+            <div className="flex-1 flex flex-col justify-center items-center px-4 py-12 sm:px-6 lg:px-8">
+                <div className="w-full max-w-md animate-modal-slide">
+                    <Card padding="lg">
+                        <div className="text-center mb-8">
+                            <h2 className="text-2xl font-bold text-text-main">
+                                Reset Password
+                            </h2>
+                            <p className="mt-2 text-sm text-text-muted">
+                                Please enter your new password below.
+                            </p>
+                        </div>
 
-                    {message && <Alert severity="success" sx={{ mb: 2 }}>{message}</Alert>}
-                    {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+                        {message && (
+                            <div className="mb-6 p-4 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-sm">
+                                {message}
+                            </div>
+                        )}
+                        {error && (
+                            <div className="mb-6 p-4 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
+                                {error}
+                            </div>
+                        )}
 
-                    <Box component="form" onSubmit={handleSubmit} noValidate>
-                        <TextField
-                            margin="normal"
-                            required
-                            fullWidth
-                            id="newPassword"
-                            label="New Password"
-                            name="newPassword"
-                            type="password"
-                            autoFocus
-                            value={newPassword}
-                            onChange={(e) => setNewPassword(e.target.value)}
-                            disabled={!token || !!message}
-                            sx={{
-                                "& .MuiOutlinedInput-root": {
-                                    color: "#ffffff",
-                                    "& fieldset": { borderColor: "#444444" },
-                                    "&:hover fieldset": { borderColor: "#666666" },
-                                    "&.Mui-focused fieldset": { borderColor: "#1976d2" },
-                                },
-                                "& .MuiInputLabel-root": {
-                                    color: "#aaaaaa",
-                                    "&.Mui-focused": { color: "#1976d2" },
-                                },
-                            }}
-                        />
+                        <form onSubmit={handleSubmit} className="space-y-6" noValidate>
+                            <Input
+                                id="newPassword"
+                                name="newPassword"
+                                type="password"
+                                label="New Password"
+                                autoComplete="new-password"
+                                autoFocus
+                                required
+                                disabled={!token || !!message}
+                                value={newPassword}
+                                onChange={(e) => setNewPassword(e.target.value)}
+                            />
 
-                        <Button
-                            type="submit"
-                            fullWidth
-                            variant="contained"
-                            disabled={!token || !!message}
-                            sx={{
-                                marginTop: 3,
-                                marginBottom: 2,
-                                backgroundColor: "#1976d2",
-                                color: "#ffffff",
-                                fontWeight: 600,
-                                padding: "10px",
-                                "&:hover": { backgroundColor: "#1565c0" },
-                                "&.Mui-disabled": {
-                                    backgroundColor: "#333333",
-                                    color: "#777777",
-                                }
-                            }}
-                        >
-                            Reset Password
-                        </Button>
-                    </Box>
-                </Paper>
-            </Box>
-        </Container>
+                            <div className="pt-2">
+                                <Button
+                                    type="submit"
+                                    fullWidth
+                                    isLoading={isLoading}
+                                    disabled={!token || !!message}
+                                    className="h-11"
+                                >
+                                    Reset Password
+                                </Button>
+                            </div>
+                        </form>
+                    </Card>
+                </div>
+            </div>
+        </AppLayout>
     );
 };
 
 export default ResetPassword;
+
